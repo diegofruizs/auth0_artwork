@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Tabla de contenidos
 -  [Introducción](#introducción)
 -  [API](#api-de-la-aplicación-artwork)
@@ -672,3 +673,6 @@ Código|Descripción|Cuerpo
 
 
 [Volver arriba](#tabla-de-contenidos)
+=======
+# auth0_artwork
+>>>>>>> origin/master
