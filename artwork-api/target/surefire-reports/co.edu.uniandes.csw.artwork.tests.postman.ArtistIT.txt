@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: co.edu.uniandes.csw.artwork.tests.postman.ArtistIT
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 57.163 sec
