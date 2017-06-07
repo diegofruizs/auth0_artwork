@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0">
    
+    <context-param>
+    <param-name>com.auth0.domain</param-name>
+    <param-value>alejandr0.auth0.com</param-value>
+</context-param>
+
+<context-param>
+    <param-name>com.auth0.clientId</param-name>
+    <param-value>ifWd4E5p99xzr0t2mUqG4aF5u8qmXsKI</param-value>
+</context-param>
+
+<context-param>
+    <param-name>com.auth0.clientSecret</param-name>
+    <param-value>MsB8spORfe0JncSn7Ort4-5MT8IZkgctsNBJRpnmOS6ARVFl_DmIN9gT0lBUaUCo</param-value>
+</context-param>
+    
+    
     <session-config>
         <session-timeout>30</session-timeout>
     </session-config>

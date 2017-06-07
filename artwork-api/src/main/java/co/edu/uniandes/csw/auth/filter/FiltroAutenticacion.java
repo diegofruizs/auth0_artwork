@@ -3,6 +3,7 @@ package co.edu.uniandes.csw.auth.filter;
 import co.edu.uniandes.csw.artwork.exceptions.BusinessLogicException;
 import co.edu.uniandes.csw.auth.provider.WebApplicationExceptionMapper;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.SignatureException;
@@ -49,6 +50,7 @@ import javax.xml.bind.DatatypeConverter;
  *
  * @generated
  */
+
 @WebFilter(filterName = "FiltroAutenticacion", urlPatterns = {"/api/*"})
 public class FiltroAutenticacion implements Filter {
 
@@ -60,6 +62,7 @@ public class FiltroAutenticacion implements Filter {
   /**
    * procesa las excepciones y las arroja hacia la capa superior
    */
+
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
     if (!((HttpServletRequest) request).getPathInfo().equals("/users/login")) {
@@ -75,7 +78,9 @@ public class FiltroAutenticacion implements Filter {
       boolean allowedPathByRole = prop.containsRole(path);
       String resource = path.split("/")[2];
       host = prop.getPropertyAsString("host");
-      SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
+      Jws<Claims> j;
+     SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
+     Key signingKey = new SecretKeySpec(secret.getBytes(), signatureAlgorithm.getJcaName());
       Cookie[] cookie = ((HttpServletRequest) request).getCookies();
 
       for (Cookie c : cookie) {
@@ -93,7 +98,22 @@ public class FiltroAutenticacion implements Filter {
           }
         }
       }
-
+      
+      
+   try {
+      if(usuario != null && jwt != null ){
+   j= Jwts.parser().setSigningKey(signingKey).parseClaimsJws(jwt); 
+      System.out.println(j.getBody().getSubject()+"***************");}
+    else
+      {if(!allowedPath)
+             throw new SignatureException("No autenticado");
+      } //OK, we can trust this JWT
+   } catch (SignatureException e) {
+        errorResponse(403,"Usuario no autenticado",(HttpServletResponse)response);
+      ((HttpServletResponse)response).sendRedirect(host+((HttpServletRequest)request).getContextPath()+"/api/users/me");
+   }
+      /*
+        
       if (allowedPath) {
         if (allowedPathByRole & !roles.contains(prop.getRole(path))) {
           errorResponse(405, "El recurso " + resource + " no esta permitido para el rol " + prop.getRole(path), (HttpServletResponse) response);
@@ -118,7 +138,9 @@ public class FiltroAutenticacion implements Filter {
           }
         }
       }
+*/
     }
+
 
     chain.doFilter(request, response);
   }

@@ -71,11 +71,7 @@ public class UserDTO implements Serializable {
             if(json.get("email")!=null){
              this.setEmail((String)json.get("email"));
             }
-            if(json.get("roles")!=null){
-                String[] array = json.get("roles").toString()
-                        .replace("[","").replace("]","").split(",");
-            this.setRoles(Collections.arrayToList(array));           
-          }     
+            
         } catch (JSONException ex) {
             Logger.getLogger(UserDTO.class.getName()).log(Level.SEVERE, null, ex);
         }
