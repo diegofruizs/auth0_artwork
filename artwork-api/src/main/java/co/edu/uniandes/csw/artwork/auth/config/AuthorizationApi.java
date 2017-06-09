@@ -14,6 +14,7 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.async.Callback;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mashape.unirest.request.HttpRequestWithBody;
+import io.jsonwebtoken.lang.Collections;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -61,6 +62,7 @@ public class AuthorizationApi {
    }
   
   public HttpResponse<String> authorizationAccessToken() throws UnirestException{
+      Unirest.setTimeouts(10000, 10000);
       return  Unirest.post(prop.getProperty("accessToken").trim())
                      .header("content-type", "application/json")
                      .body("{\"grant_type\":\""+prop.getProperty("grantType").trim()+"\","
@@ -70,13 +72,15 @@ public class AuthorizationApi {
   }
   
    public HttpResponse<String> authorizationGetGroups() throws UnirestException, JSONException, InterruptedException, ExecutionException{  
-  return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/groups")
+   Unirest.setTimeouts(10000, 10000);
+       return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/groups")
           .header("Authorization", "Bearer "+getAuthorizationAccessToken()).asString();
   
   }
    
   public HttpResponse<String> authorizationGetGroupRoles() throws UnirestException, JSONException, InterruptedException, ExecutionException{  
-  return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/groups/"+getGroupID(getGroups())+"/roles")
+  Unirest.setTimeouts(10000, 10000);
+      return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/groups/"+getGroupID(getGroups())+"/roles")
           .header("Authorization", "Bearer "+getAuthorizationAccessToken()).asString();
   
   }
@@ -84,6 +88,7 @@ public class AuthorizationApi {
   
 public void authorizationAddUserToGroup(String userId) throws UnirestException, JSONException, InterruptedException, ExecutionException{
 String user="auth0%7C"+userId;
+Unirest.setTimeouts(10000, 10000);
 Unirest.patch(prop.getProperty("authorizationExtension").trim()+"/users/"+user+"/groups")
           .header("Authorization", "Bearer "+getAuthorizationAccessToken())
           .body("[\""+getGroupID(getGroups())+"\"]").asString();
@@ -93,6 +98,7 @@ public void authorizationAddRoleToUser(String userId,String roles) throws Unires
 String user="auth0%7C"+userId;
 System.out.println(user);
 System.out.println(roles);
+Unirest.setTimeouts(10000, 10000);
 HttpResponse<String> rsp=Unirest.patch(prop.getProperty("authorizationExtension").trim()+"/users/"+user+"/roles")
           .header("Authorization", "Bearer "+getAuthorizationAccessToken())
           .body("[\""+roles+"\"]").asString();
@@ -101,14 +107,24 @@ System.out.println(rsp.getHeaders());
 }
 
 public HttpResponse<String> authorizationGetRoles() throws UnirestException, JSONException, InterruptedException, ExecutionException{
-
-return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/roles")
+Unirest.setTimeouts(10000, 10000);
+    return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/roles")
+          .header("Authorization", "Bearer "+getAuthorizationAccessToken()).asString();
+}
+public HttpResponse<String> authorizationGetPermissionsByRole(String id) throws UnirestException, JSONException{
+Unirest.setTimeouts(10000, 10000);
+return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/permissions/"+id)
           .header("Authorization", "Bearer "+getAuthorizationAccessToken()).asString();
 
-
 }
- 
-   public String getAuthorizationAccessToken() throws UnirestException, JSONException{
+public HttpResponse<String> authorizationGetUserRoles(String userId) throws UnirestException, JSONException{
+String user=userId.replace("auth0|", "auth0%7C");
+Unirest.setTimeouts(10000, 10000); 
+return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/users/"+user+"/roles")
+          .header("Authorization", "Bearer "+getAuthorizationAccessToken()).asString();
+}
+
+public String getAuthorizationAccessToken() throws UnirestException, JSONException{
   HttpResponse<String> res= authorizationAccessToken(); 
   return getField(res,"access_token");
   }
@@ -129,9 +145,18 @@ return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/roles")
   
   }
    
-  public String getField(HttpResponse<String> rsp,String field) throws JSONException{
-       JSONObject json = new JSONObject(rsp.getBody());
-       return (String) json.get(field);  
+  public List<String> getRoles(JSONObject json) throws JSONException{
+    
+   String[] roles=json.getJSONObject("app_metadata")
+           .getJSONObject("authorization").get("roles").toString().replaceAll("\"","").replace("[", "").replace("]","").split(",");
+    return Collections.arrayToList(roles);
+   }
+   public List<String> getRoles(JSONArray json) throws JSONException{
+       List<String> list = new ArrayList<>();
+    for(int i=0;i<json.length();i++){
+    list.add((String) json.getJSONObject(i).get("name"));
+    }
+    return list;
    }
   
   public List<String> getSignUpRolesId(UserDTO user,HttpResponse<String> rsp) throws UnirestException, JSONException, InterruptedException, ExecutionException{
@@ -152,25 +177,32 @@ return Unirest.get(prop.getProperty("authorizationExtension").trim()+"/roles")
   return null;
   }
  
+  public String getField(HttpResponse<String> rsp,String field) throws JSONException{
+       JSONObject json = new JSONObject(rsp.getBody());
+       return (String) json.get(field);  
+   }
+  
+public List<String> getRolesIDPerUser(HttpResponse<String> rsp) throws JSONException{
+     JSONArray jarray = new JSONArray(rsp.getBody());
+     List<String> list = new ArrayList<>();
+     
+     for(int i=0;i<jarray.length();i++)
+          list.add((String) jarray.getJSONObject(i).get("_id"));
+     
+ return list;
+ }
+public List<String> getPermissionsPerRole(List<String> list) throws UnirestException, JSONException, InterruptedException, ExecutionException{
+ JSONObject json = new JSONObject(authorizationGetRoles().getBody());
+ JSONArray jarray = json.getJSONArray("roles");
+ List<String> plist=new ArrayList<>();
+ for(int i=0;i<jarray.length();i++){
+     if(list.contains(jarray.getJSONObject(i).get("_id"))){
+   for(int j=0;j<jarray.getJSONObject(i).getJSONArray("permissions").length();j++){
+    plist.add((String) new JSONObject(authorizationGetPermissionsByRole((String) jarray.getJSONObject(i).getJSONArray("permissions").get(j)).getBody()).get("name"));  
+   }
+       }
+       }
+ return plist;
 }
 
-/*new Callback<String>(){
-    @Override
-    public void completed(HttpResponse<String> hr) {
-         int code = hr.getCode();
-         Map<String, String> headers = hr.getHeaders();
-         String body = hr.getBody();
-         InputStream rawBody = hr.getRawBody(); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public void failed(UnirestException ue) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public void cancelled() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-          
-          }*/
+}

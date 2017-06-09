@@ -59,12 +59,14 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.json.JSONArray;
 
 @Path("/users")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -77,22 +79,25 @@ public class AuthService {
     @Context
     private HttpServletRequest req;
     
-    private final AuthenticationApi auth;
-     private final AuthorizationApi authorization;
+    private final  AuthenticationApi auth;
+     private final  AuthorizationApi authorization;
     
    
     public AuthService() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
         this.auth = new AuthenticationApi();
-        this.authorization = new AuthorizationApi();
-        
+        this.authorization = new AuthorizationApi();       
     }
     
     @Path("/login") 
     @POST
     public UserDTO login(UserDTO user) throws UnirestException, JSONException, IOException, InterruptedException, ExecutionException{
-       HttpResponse<String> res= auth.managementGetUser(auth.getSubject(user,rsp));
-       JSONObject json=new JSONObject(res.getBody());
-       user.setRoles(auth.getRoles(json));
+       String str = auth.getSubject(user,rsp);
+       HttpResponse<String> rp=authorization.authorizationGetUserRoles(str);
+       System.out.println(rp.getBody());
+       JSONArray jarray = new JSONArray(rp.getBody());
+       List<String> permissions = new ArrayList<>();
+       
+       user.setRoles(authorization.getRoles(new JSONArray(rp.getBody())));
        return user;
     }
     
@@ -102,7 +107,6 @@ public class AuthService {
        auth.authenticationLogout();
     } 
     
-  
     @Path("/register")
     @POST
     @StatusCreated
@@ -111,33 +115,32 @@ public class AuthService {
     HttpResponse<String> rs=auth.authenticationSignUP(user);
     JSONObject json=new JSONObject(rs.getBody());
     String str = (String)json.get("_id");
-    System.out.print(str);
     authorization.authorizationAddUserToGroup(str);
     HttpResponse<String>  response = authorization.authorizationGetRoles();
     List<String> list = authorization.getSignUpRolesId(user, response);
-    Unirest.setTimeouts(10000, 10000);
-    String h = list.toString().replace("[", "").replace("]","");
-    authorization.authorizationAddRoleToUser(str, h);
-    auth.HttpServletResponseBinder(rs,rsp);  
-   
+    Iterator<String> it = list.iterator();
+    while(it.hasNext()){
+        authorization.authorizationAddRoleToUser(str, it.next());
     }
-    
-   
+    auth.HttpServletResponseBinder(rs,rsp);  
+    }
     
     @Path("/me")
     @GET
     public UserDTO getCurrentUser() throws JSONException, UnirestException, IOException, InterruptedException, ExecutionException {    
-     
-     
-       
-
-    //authorization.authorizationAddRoleToUser("5936ec1f543dbb2a2f0b5774","da02b99c-aba1-4665-8389-2e93ccf0e581");
+    
      Jws<Claims> claim = auth.decryptToken(req);
+     String subject="";
+     List<String> list=null;
      if(claim!=null){
-     HttpResponse<String> resp= auth.managementGetUser(claim.getBody().getSubject());
+         subject = claim.getBody().getSubject();
+     HttpResponse<String> resp= auth.managementGetUser(subject);
      JSONObject json = new JSONObject(resp.getBody());
      UserDTO user = new UserDTO(json.getJSONObject("user_metadata"));
-     user.setRoles(auth.getRoles(json));
+     HttpResponse<String> rp=authorization.authorizationGetUserRoles(subject); 
+     System.out.println(authorization.getPermissionsPerRole(authorization.getRolesIDPerUser(rp)));
+     list = authorization.getRoles(new JSONArray(rp.getBody()));
+     user.setRoles(list);
      return user;
      }
      return null;  

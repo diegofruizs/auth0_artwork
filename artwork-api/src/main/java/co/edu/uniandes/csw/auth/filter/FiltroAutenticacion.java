@@ -1,7 +1,11 @@
 package co.edu.uniandes.csw.auth.filter;
 
+import co.edu.uniandes.csw.artwork.auth.config.AuthenticationApi;
+import co.edu.uniandes.csw.artwork.auth.config.AuthorizationApi;
 import co.edu.uniandes.csw.artwork.exceptions.BusinessLogicException;
 import co.edu.uniandes.csw.auth.provider.WebApplicationExceptionMapper;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
@@ -23,6 +27,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.spec.SecretKeySpec;
 import javax.ejb.EJB;
@@ -43,6 +49,7 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.xml.bind.DatatypeConverter;
+import org.json.JSONException;
 
 /**
  * Este filtro procesa las excepciones que se arrojan hacia arriba y generan un
@@ -53,6 +60,8 @@ import javax.xml.bind.DatatypeConverter;
 
 @WebFilter(filterName = "FiltroAutenticacion", urlPatterns = {"/api/*"})
 public class FiltroAutenticacion implements Filter {
+    private   AuthenticationApi auth;
+    private   AuthorizationApi authorization;
 
   @Override
   public void init(FilterConfig filterConfig) throws ServletException {
@@ -65,22 +74,30 @@ public class FiltroAutenticacion implements Filter {
 
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-    if (!((HttpServletRequest) request).getPathInfo().equals("/users/login")) {
-      WebApplicationExceptionMapper mapper = new WebApplicationExceptionMapper();
-      String usuario = null, jwt = null, secret, path, host;
-      List<String> roles = new ArrayList<>();
-      List<String> methods = new ArrayList<>();
+        try {
+            this.auth = new AuthenticationApi();
+            this.authorization = new AuthorizationApi();
+        } catch (UnirestException ex) {
+            Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (JSONException ex) {
+            Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ExecutionException ex) {
+            Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
+        }
+       
+      HttpResponse<String> rp=null;
+      String usuario = null, jwt = null, path=null, resource=null, subject=null;
       PropertiesLoader prop = new PropertiesLoader();
-      secret = prop.getPropertyAsString("secretKey");
+      Jws<Claims> claim = null;
+      List<String> permissions=null;
       path = ((HttpServletRequest) request).getRequestURI().substring(((HttpServletRequest) request).getContextPath().length()).replace("[/]+$", "");
-      path = String.join("/", Arrays.copyOfRange(path.split("/"), 0, 3));
+      path = String.join("/", Arrays.copyOfRange(path.split("/"), 0, 3)).trim();
+      resource = path.split("/")[2];
+      System.out.println(resource);
+      System.out.println(path);
       boolean allowedPath = prop.containsKey(path);
-      boolean allowedPathByRole = prop.containsRole(path);
-      String resource = path.split("/")[2];
-      host = prop.getPropertyAsString("host");
-      Jws<Claims> j;
-     SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
-     Key signingKey = new SecretKeySpec(secret.getBytes(), signatureAlgorithm.getJcaName());
       Cookie[] cookie = ((HttpServletRequest) request).getCookies();
 
       for (Cookie c : cookie) {
@@ -90,58 +107,39 @@ public class FiltroAutenticacion implements Filter {
         if ("username".equals(c.getName())) {
           usuario = c.getValue();
         }
-        if ("roles".equals(c.getName())) {
-          if (c.getValue().contains("%2C")) {
-            roles = Collections.arrayToList(c.getValue().split("%2C"));
-          } else {
-            roles.add(c.getValue());
-          }
-        }
-      }
-      
+      }  
       
    try {
       if(usuario != null && jwt != null ){
-   j= Jwts.parser().setSigningKey(signingKey).parseClaimsJws(jwt); 
-      System.out.println(j.getBody().getSubject()+"***************");}
-    else
-      {if(!allowedPath)
-             throw new SignatureException("No autenticado");
-      } //OK, we can trust this JWT
+  claim = auth.decryptToken(((HttpServletRequest) request));
+  subject = claim.getBody().getSubject();
+  rp = authorization.authorizationGetUserRoles(subject);
+  permissions = authorization.getPermissionsPerRole(authorization.getRolesIDPerUser(rp));
+   
+   System.out.println(rp);
+   System.out.println(subject);
+      }else{
+          if(!allowedPath & !"users".equals(resource))
+        throw new SignatureException("No autenticado");
+      }         
    } catch (SignatureException e) {
         errorResponse(403,"Usuario no autenticado",(HttpServletResponse)response);
-      ((HttpServletResponse)response).sendRedirect(host+((HttpServletRequest)request).getContextPath()+"/api/users/me");
-   }
-      /*
-        
-      if (allowedPath) {
-        if (allowedPathByRole & !roles.contains(prop.getRole(path))) {
-          errorResponse(405, "El recurso " + resource + " no esta permitido para el rol " + prop.getRole(path), (HttpServletResponse) response);
-          return;
+      ((HttpServletResponse)response).sendRedirect("http://localhost:8080"+((HttpServletRequest)request).getContextPath()+"/api/users/me");
+   }    catch (UnirestException ex) {
+            Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (JSONException ex) {
+            Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ExecutionException ex) {
+            Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
         }
-      } else {
-        errorResponse(405, "No existen permisos para recurso " + resource, (HttpServletResponse) response);
-        return;
-      }
-
-      if (allowedPath) {
-        if (allowedPathByRole & roles.contains(prop.getRole(path))) {
-          if (prop.isMethodList(path)) {
-            methods = prop.getMethodsAsList(path);
-          } else {
-            methods.add(prop.getMethodsAsString(path));
-          }
-
-          if (!methods.contains(prop.methodMapper(((HttpServletRequest) request).getMethod()))) {
-            errorResponse(405, prop.methodMapper(((HttpServletRequest) request).getMethod()) + " no esta permitido para recurso " + resource, (HttpServletResponse) response);
-            return;
-          }
-        }
-      }
-*/
-    }
-
-
+       if(permissions != null & !"users".equals(resource) & !allowedPath){
+       if(!permissions.contains(methodMapper(((HttpServletRequest)request).getMethod()).concat(":").concat(resource)))
+       errorResponse(405,"no existe permiso "+methodMapper(((HttpServletRequest)request).getMethod()).concat(":").concat(resource),(HttpServletResponse) response);
+           }
+           
+           
     chain.doFilter(request, response);
   }
 
@@ -157,5 +155,24 @@ public class FiltroAutenticacion implements Filter {
     response.getWriter().write(msg);
     response.flushBuffer();
   }
-
+public static String methodMapper(String s){
+      String str;
+   switch(s){
+       case "POST": 
+       str="create";
+       break;
+       case "GET": 
+       str="read";
+       break;
+       case "PUT": 
+       str="update";
+       break;
+       case "DELETE": 
+       str="delete";
+       break;
+       default:
+           str="";
+   }
+   return str;
+  }
 }

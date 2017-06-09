@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Key;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -32,6 +33,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -68,6 +70,7 @@ public class AuthenticationApi {
    }
   
      public HttpResponse<String> managementToken() throws UnirestException{
+         Unirest.setTimeouts(10000, 10000);
      return Unirest.post(prop.getProperty("accessToken").trim())
              .header("content-type", "application/json")
              .body("{\"grant_type\":\"client_credentials\","
@@ -78,24 +81,25 @@ public class AuthenticationApi {
      }
      
       public  HttpResponse<String> managementGetUser(String id) throws UnirestException, JSONException{   
-     
+           Unirest.setTimeouts(10000, 10000);
          return Unirest.get(prop.getProperty("users").trim()+"/"+id.replace("|", "%7C"))
                       .header("content-type", "application/json")
                       .header("Authorization", "Bearer "+getManagementAccessToken()).asString();    
     } 
      
      public HttpResponse<String> authenticationToken(UserDTO dto) throws UnirestException{
-    return Unirest.post(prop.getProperty("accessToken"))
+         Unirest.setTimeouts(10000, 10000);
+    return Unirest.post(prop.getProperty("idTokenResource").trim())
                      .header("content-type", "application/json")
-                     .body("{\"grant_type\":\"password\","
+                     .body("{\"client_id\":\""+prop.getProperty("authenticationClientId").trim()+"\","
                      + "\"username\":\""+dto.getUserName()+"\","
                      + "\"password\":\""+dto.getPassword()+"\","
-                     + "\"client_id\":\""+prop.getProperty("clientId").trim()+"\","
-                     + "\"client_secret\":\""+prop.getProperty("secretKey").trim()+"\"}").asString();
+                     + "\"connection\":\""+prop.getProperty("connection").trim()+"\","
+                     + "\"scope\":\""+prop.getProperty("scope").trim()+"\"}").asString();  
     }
      
      public  HttpResponse<String> authenticationSignUP(UserDTO dto) throws UnirestException{
-       
+        Unirest.setTimeouts(10000, 10000);
          return Unirest.post(prop.getProperty("signUp").trim())
                      .header("content-type", "application/json")
                      .body("{\"client_id\":\""+prop.getProperty("clientId").trim()+"\","
@@ -109,12 +113,13 @@ public class AuthenticationApi {
                      + "\"sur_name\":\""+dto.getSurName()+"\"}}").asString();
    }
      public  HttpResponse<String> authenticationUserInfo(UserDTO dto,HttpServletResponse rsp) throws UnirestException, JSONException{   
-        return Unirest.get(prop.getProperty("userInfo").trim())
+       Unirest.setTimeouts(10000, 10000);
+         return Unirest.get(prop.getProperty("userInfo").trim())
                       .header("Authorization", "Bearer "+getAuthenticationAccessToken(dto, rsp)).asString();    
     } 
    
-  
-   public  void authenticationLogout(){      
+   public  void authenticationLogout(){  
+       Unirest.setTimeouts(10000, 10000);
        Unirest.get(prop.getProperty("logout").trim());  
    }
   
@@ -138,13 +143,6 @@ public class AuthenticationApi {
    return  json.get("sub").toString();
    }
    
-   public List<String> getRoles(JSONObject json) throws JSONException{
-    
-   String[] roles=json.getJSONObject("app_metadata")
-           .getJSONObject("authorization").get("roles").toString().replaceAll("\"","").replace("[", "").replace("]","").split(",");
-    return Collections.arrayToList(roles);
-   }
-   
     public void HttpServletResponseBinder(HttpResponse<String> rsp,HttpServletResponse res) throws IOException{  
        res.setHeader("content-type", "application/json");
        res.setStatus(rsp.getCode());
@@ -156,7 +154,7 @@ public class AuthenticationApi {
        Cookie[] cookie=req.getCookies();
        String jwt=null;
        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
-       String secret = prop.getProperty("secretKey");
+       String secret = prop.getProperty("authenticationSecretKey");
        Key signingKey = new SecretKeySpec(secret.getBytes(), signatureAlgorithm.getJcaName());
        Jws<Claims> j;
        for (Cookie c : cookie) {
