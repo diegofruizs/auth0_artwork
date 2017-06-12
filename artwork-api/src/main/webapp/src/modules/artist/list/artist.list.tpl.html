@@ -25,7 +25,7 @@ SOFTWARE.
     <breadcrumb link="model.displayName"></breadcrumb>
     <toolbar name="model.name" display-name="model.displayName" actions='actions'></toolbar>
 </header>
-<list-records fields="model.fields" records="records" actions="recordActions"></list-records>
+<list-records name="model.displayName" fields="model.fields" records="records" actions="recordActions"></list-records>
 <pagination ng-if="ctrl.itemsPerPage < ctrl.totalItems"
             total-items="ctrl.totalItems"
             max-size="5"

@@ -91,13 +91,13 @@ public class AuthService {
     @Path("/login") 
     @POST
     public UserDTO login(UserDTO user) throws UnirestException, JSONException, IOException, InterruptedException, ExecutionException{
-       String str = auth.getSubject(user,rsp);
-       HttpResponse<String> rp=authorization.authorizationGetUserRoles(str);
-       System.out.println(rp.getBody());
-       JSONArray jarray = new JSONArray(rp.getBody());
-       List<String> permissions = new ArrayList<>();
-       
-       user.setRoles(authorization.getRoles(new JSONArray(rp.getBody())));
+    String str = auth.getSubject(user,rsp);
+    List<String> permissions=null;
+    HttpResponse<String> rp=authorization.authorizationGetUserRoles(str);
+    permissions = authorization.getPermissionsPerRole(authorization.getRolesIDPerUser(rp));
+    user.setRoles(authorization.getRoles(new JSONArray(rp.getBody())));
+    user.setPermissions(permissions);
+    System.out.println(user);
        return user;
     }
     
@@ -131,20 +131,22 @@ public class AuthService {
     
      Jws<Claims> claim = auth.decryptToken(req);
      String subject="";
-     List<String> list=null;
+     List<String> roles=null;
+     List<String> permissions=null;
      if(claim!=null){
          subject = claim.getBody().getSubject();
      HttpResponse<String> resp= auth.managementGetUser(subject);
      JSONObject json = new JSONObject(resp.getBody());
      UserDTO user = new UserDTO(json.getJSONObject("user_metadata"));
-     HttpResponse<String> rp=authorization.authorizationGetUserRoles(subject); 
-     System.out.println(authorization.getPermissionsPerRole(authorization.getRolesIDPerUser(rp)));
-     list = authorization.getRoles(new JSONArray(rp.getBody()));
-     user.setRoles(list);
+     HttpResponse<String> rp = authorization.authorizationGetUserRoles(subject); 
+     permissions = authorization.getPermissionsPerRole(authorization.getRolesIDPerUser(rp));
+     roles = authorization.getRoles(new JSONArray(rp.getBody()));
+     user.setRoles(roles);
+     user.setPermissions(permissions);
+     
      return user;
      }
      return null;  
-
     }
    
 }

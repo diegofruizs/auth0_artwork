@@ -50,7 +50,7 @@ public class UserDTO implements Serializable {
     private String email;
     private String rememberMe;
     private List<String> roles;
-     
+    private List<String> permissions;
     
     public UserDTO(){}
     
@@ -192,6 +192,20 @@ public class UserDTO implements Serializable {
      */
     public void setRoles(List<String> roles) {
         this.roles = roles;
+    }
+
+    /**
+     * @return the permissions
+     */
+    public List<String> getPermissions() {
+        return permissions;
+    }
+
+    /**
+     * @param permissions the permissions to set
+     */
+    public void setPermissions(List<String> permissions) {
+        this.permissions = permissions;
     }
 
     /**

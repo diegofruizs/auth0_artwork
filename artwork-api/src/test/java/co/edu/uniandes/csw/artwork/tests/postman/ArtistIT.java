@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Logger;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -71,7 +72,7 @@ public class ArtistIT {
                         .withTransitivity().asFile())
                 // Se agregan los compilados de los paquetes de servicios
                 .addPackage(ArtistResource.class.getPackage())
-                .addPackage("co.edu.uniandes.csw.auth.filter")
+                
                 // El archivo que contiene la configuracion a la base de datos.
                 .addAsResource("META-INF/persistence.xml", "META-INF/persistence.xml")
                 // El archivo beans.xml es necesario para injeccion de dependencias.
@@ -82,7 +83,7 @@ public class ArtistIT {
     }   
     
 
-public void setPostmanCollectionValues(String action) throws FileNotFoundException, IOException, ParseException{
+public void setPostmanCollectionValues(String action) throws FileNotFoundException, IOException, ParseException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
  
     FileReader reader = new FileReader(CollectionPrepare.getPATH());
     Object obj = parser.parse(reader);
@@ -100,7 +101,7 @@ public void setPostmanCollectionValues(String action) throws FileNotFoundExcepti
 
 
     @Test 
-    public void postman() throws FileNotFoundException, IOException, ParseException{
+    public void postman() throws FileNotFoundException, IOException, ParseException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
         
       setPostmanCollectionValues("create");
       setPostmanCollectionValues("edit");

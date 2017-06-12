@@ -11,8 +11,8 @@
             $scope.alerts = [];
             $scope.roles = authSvc.getRoles();
             
-            authSvc.userAuthenticated().then(function (data) {
-                
+            authSvc.userAuthenticated().then(function (data) {             
+                $scope.permissions = data.data.permissions;
                 $scope.currentUser = data.data;
                 if ($scope.currentUser !== "" && !$scope.menuitems) {
                     $scope.setMenu($scope.currentUser);

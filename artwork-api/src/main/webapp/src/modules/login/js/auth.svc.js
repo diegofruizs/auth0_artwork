@@ -49,7 +49,7 @@
             }
             };
         
-        
+         
         this.setValues = function (newValues) {
             values = ng.extend(values, newValues);
         };
@@ -76,9 +76,8 @@
                         $rootScope.$broadcast('logged-in', response.data);        
                         $cookies.put("id_token",response.headers("id_token"));
                         $cookies.put("username",user.userName);
-                        var rol = JSON.stringify(response.data.roles);
-                        rol=rol.replace(/['" ]+/g,'').replace("[","").replace("]",""); 
-                        $cookies.put("roles",rol);
+                        var permissions = JSON.stringify(response.data.permissions);
+                        $cookies.put("permissions",permissions);
                         $state.go(values.successState);
                       
                     });
@@ -92,7 +91,7 @@
                         $rootScope.$broadcast('logged-out');
                         $cookies.remove("id_token");
                         $cookies.remove("username");
-                        $cookies.remove("roles");
+                        $cookies.remove("permissions");
                         $state.go(values.logoutRedirectState);
                     });
                 },
