@@ -43,12 +43,6 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.xml.bind.DatatypeConverter;
 import org.json.JSONException;
 
 /**
@@ -60,8 +54,8 @@ import org.json.JSONException;
 
 @WebFilter(filterName = "FiltroAutenticacion", urlPatterns = {"/api/*"})
 public class FiltroAutenticacion implements Filter {
-    private   AuthenticationApi auth;
-    private   AuthorizationApi authorization;
+    private AuthenticationApi auth;
+    
 
   @Override
   public void init(FilterConfig filterConfig) throws ServletException {
@@ -76,7 +70,8 @@ public class FiltroAutenticacion implements Filter {
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         try {
             this.auth = new AuthenticationApi();
-            this.authorization = new AuthorizationApi();
+           
+           
         } catch (UnirestException | JSONException | InterruptedException | ExecutionException ex) {
             Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -102,10 +97,12 @@ public class FiltroAutenticacion implements Filter {
       
    try {
       if(usuario != null && jwt != null ){
+          
   claim =  auth.decryptToken((HttpServletRequest)request);
   subject = claim.getBody().getSubject();
-  rp = authorization.authorizationGetUserRoles(subject);
-  permissions = authorization.getPermissionsPerRole(authorization.getRolesIDPerUser(rp));
+  
+  permissions = CacheManager.getPermissionsCache().get(subject);
+      
       }else{
           if(!allowedPath & !"users".equals(resource))
         throw new SignatureException("No autenticado");
@@ -113,7 +110,7 @@ public class FiltroAutenticacion implements Filter {
    } catch (SignatureException e) {
         errorResponse(403,"Usuario no autenticado",(HttpServletResponse)response);
       ((HttpServletResponse)response).sendRedirect("http://localhost:8080"+((HttpServletRequest)request).getContextPath()+"/api/users/me");
-   }    catch (UnirestException | JSONException | InterruptedException | ExecutionException ex) {
+   }    catch (ExecutionException ex) {
             Logger.getLogger(FiltroAutenticacion.class.getName()).log(Level.SEVERE, null, ex);
         }
        if(permissions != null & !"users".equals(resource) & !allowedPath){

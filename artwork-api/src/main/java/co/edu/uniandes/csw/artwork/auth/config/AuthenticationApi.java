@@ -70,7 +70,7 @@ public class AuthenticationApi {
    }
   
      public HttpResponse<String> managementToken() throws UnirestException{
-         Unirest.setTimeouts(10000, 10000);
+         Unirest.setTimeouts(1000, 10000);
      return Unirest.post(prop.getProperty("accessToken").trim())
              .header("content-type", "application/json")
              .body("{\"grant_type\":\"client_credentials\","
@@ -81,14 +81,15 @@ public class AuthenticationApi {
      }
      
       public  HttpResponse<String> managementGetUser(String id) throws UnirestException, JSONException{   
-           Unirest.setTimeouts(10000, 10000);
+          
+          Unirest.setTimeouts(1000, 10000);
          return Unirest.get(prop.getProperty("users").trim()+"/"+id.replace("|", "%7C"))
                       .header("content-type", "application/json")
                       .header("Authorization", "Bearer "+getManagementAccessToken()).asString();    
     } 
      
      public HttpResponse<String> authenticationToken(UserDTO dto) throws UnirestException{
-         Unirest.setTimeouts(10000, 10000);
+         Unirest.setTimeouts(1000, 10000);
     return Unirest.post(prop.getProperty("idTokenResource").trim())
                      .header("content-type", "application/json")
                      .body("{\"client_id\":\""+prop.getProperty("authenticationClientId").trim()+"\","
@@ -99,7 +100,7 @@ public class AuthenticationApi {
     }
      
      public  HttpResponse<String> authenticationSignUP(UserDTO dto) throws UnirestException{
-        Unirest.setTimeouts(10000, 10000);
+        Unirest.setTimeouts(1000, 10000);
          return Unirest.post(prop.getProperty("signUp").trim())
                      .header("content-type", "application/json")
                      .body("{\"client_id\":\""+prop.getProperty("clientId").trim()+"\","
@@ -113,13 +114,13 @@ public class AuthenticationApi {
                      + "\"sur_name\":\""+dto.getSurName()+"\"}}").asString();
    }
      public  HttpResponse<String> authenticationUserInfo(UserDTO dto,HttpServletResponse rsp) throws UnirestException, JSONException{   
-       Unirest.setTimeouts(10000, 10000);
+       Unirest.setTimeouts(1000, 10000);
          return Unirest.get(prop.getProperty("userInfo").trim())
                       .header("Authorization", "Bearer "+getAuthenticationAccessToken(dto, rsp)).asString();    
     } 
    
    public  void authenticationLogout(){  
-       Unirest.setTimeouts(10000, 10000);
+       Unirest.setTimeouts(1000, 10000);
        Unirest.get(prop.getProperty("logout").trim());  
    }
   

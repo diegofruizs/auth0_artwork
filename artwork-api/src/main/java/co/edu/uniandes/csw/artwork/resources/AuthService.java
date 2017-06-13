@@ -21,12 +21,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-*/
-
+ */
 package co.edu.uniandes.csw.artwork.resources;
+
 import co.edu.uniandes.csw.artwork.auth.config.AuthenticationApi;
 import co.edu.uniandes.csw.artwork.auth.config.AuthorizationApi;
 import co.edu.uniandes.csw.artwork.dtos.minimum.UserDTO;
+import co.edu.uniandes.csw.auth.filter.CacheManager;
 import co.edu.uniandes.csw.auth.provider.StatusCreated;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
@@ -72,87 +73,73 @@ import org.json.JSONArray;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthService {
-   
+
     @Context
     private HttpServletResponse rsp;
-    
+
     @Context
     private HttpServletRequest req;
-    
-    private final  AuthenticationApi auth;
-     private final  AuthorizationApi authorization;
-    
-   
+
+    private final AuthenticationApi auth;
+    private final AuthorizationApi authorization;
+
     public AuthService() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
         this.auth = new AuthenticationApi();
-        this.authorization = new AuthorizationApi();       
+        this.authorization = new AuthorizationApi();
+
     }
-    
-    @Path("/login") 
+
+    @Path("/login")
     @POST
-    public UserDTO login(UserDTO user) throws UnirestException, JSONException, IOException, InterruptedException, ExecutionException{
-    String str = auth.getSubject(user,rsp);
-    List<String> permissions=null;
-    HttpResponse<String> rp=authorization.authorizationGetUserRoles(str);
-    permissions = authorization.getPermissionsPerRole(authorization.getRolesIDPerUser(rp));
-    user.setRoles(authorization.getRoles(new JSONArray(rp.getBody())));
-    user.setPermissions(permissions);
-    System.out.println(user);
-       return user;
+    public UserDTO login(UserDTO user) throws UnirestException, JSONException, IOException, InterruptedException, ExecutionException {
+        String str = auth.getSubject(user, rsp);
+        user.setRoles(CacheManager.getRolesByUserCache().get(str));
+        user.setPermissions(CacheManager.getPermissionsCache().get(str));
+
+        return user;
     }
-    
+
     @Path("/logout")
-    @GET 
-    public void logout() {   
-       auth.authenticationLogout();
-    } 
-    
+    @GET
+    public void logout() {
+        auth.authenticationLogout();
+    }
+
     @Path("/register")
     @POST
     @StatusCreated
     public void register(UserDTO user) throws UnirestException, JSONException, IOException, InterruptedException, ExecutionException {
-     
-    HttpResponse<String> rs=auth.authenticationSignUP(user);
-    JSONObject json=new JSONObject(rs.getBody());
-    String str = (String)json.get("_id");
-    authorization.authorizationAddUserToGroup(str);
-    HttpResponse<String>  response = authorization.authorizationGetRoles();
-    List<String> list = authorization.getSignUpRolesId(user, response);
-    Iterator<String> it = list.iterator();
-    while(it.hasNext()){
-        authorization.authorizationAddRoleToUser(str, it.next());
+
+        HttpResponse<String> rs = auth.authenticationSignUP(user);
+        JSONObject json = new JSONObject(rs.getBody());
+        String str = (String) json.get("_id");
+        authorization.authorizationAddUserToGroup(str);
+        HttpResponse<String> response = CacheManager.getRolesCache().get("roles");
+        List<String> list = authorization.getSignUpRolesId(user, response);
+        Iterator<String> it = list.iterator();
+        while (it.hasNext()) {
+            authorization.authorizationAddRoleToUser(str, it.next());
+        }
+        auth.HttpServletResponseBinder(rs, rsp);
     }
-    auth.HttpServletResponseBinder(rs,rsp);  
-    }
-    
+
     @Path("/me")
     @GET
-    public UserDTO getCurrentUser() throws JSONException, UnirestException, IOException, InterruptedException, ExecutionException {    
-    
-     Jws<Claims> claim = auth.decryptToken(req);
-     String subject="";
-     List<String> roles=null;
-     List<String> permissions=null;
-     if(claim!=null){
-         subject = claim.getBody().getSubject();
-     HttpResponse<String> resp= auth.managementGetUser(subject);
-     JSONObject json = new JSONObject(resp.getBody());
-     UserDTO user = new UserDTO(json.getJSONObject("user_metadata"));
-     HttpResponse<String> rp = authorization.authorizationGetUserRoles(subject); 
-     permissions = authorization.getPermissionsPerRole(authorization.getRolesIDPerUser(rp));
-     roles = authorization.getRoles(new JSONArray(rp.getBody()));
-     user.setRoles(roles);
-     user.setPermissions(permissions);
-     
-     return user;
-     }
-     return null;  
+    public UserDTO getCurrentUser() throws JSONException, UnirestException, IOException, InterruptedException, ExecutionException {
+
+        Jws<Claims> claim = auth.decryptToken(req);
+        String subject = "";
+        if (claim != null) {
+            subject = claim.getBody().getSubject();
+            UserDTO user = CacheManager.getProfileCache().get(subject);
+
+            CacheManager.getRolesByUserCache().get(subject);
+            user.setRoles(CacheManager.getRolesByUserCache().get(subject));
+            user.setPermissions(CacheManager.getPermissionsCache().get(subject));
+
+            return user;
+        }
+        return null;
     }
-   
+
 }
- 
-
-    
- 
-
-    

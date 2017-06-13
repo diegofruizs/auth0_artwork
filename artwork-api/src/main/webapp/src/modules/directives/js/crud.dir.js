@@ -62,9 +62,9 @@
                         var actions = $scope.actions;
                         var allowedButtons = [];
                         var name = $scope.name.toLowerCase().concat("s");
-                        console.log(name);
+                       
                         for (var key in permissions) {
-                            console.log(JSON.stringify(permissions[key]));
+                            
                             if (permissions[key].includes(name)) {
                                 if ("read" === permissions[key].split(":")[0])
                                     allowedButtons.push("list", "detail", "artworks", "refresh");
@@ -80,7 +80,7 @@
                             if (allowedButtons.indexOf(action) === -1)
                                 delete actions[action];
                         }
-                        console.log(JSON.stringify(allowedButtons));
+                     
                         $scope.actions = actions;
 
 
@@ -144,8 +144,8 @@
                         var actions = $scope.actions;
                         var allowedButtons = [];
                         var name = $scope.name.toLowerCase().concat("s");
-                        ;
-                        console.log(name);
+                        
+                        
                         for (var key in permissions) {
                             if (permissions[key].includes(name)) {
                                 if ("read" === permissions[key].split(":")[0])
@@ -162,7 +162,7 @@
                             if (allowedButtons.indexOf(action) === -1)
                                 delete actions[action];
                         }
-                        console.log(JSON.stringify(allowedButtons));
+                       
                         $scope.actions = actions;
 
                         angular.forEach($scope.actions, function (value, key)
@@ -256,7 +256,6 @@
                             if (allowedButtons.indexOf(action) === -1)
                                 delete actions[action];
                         }
-                        console.log(JSON.stringify(allowedButtons));
                         $scope.actions = actions;
 
 
