@@ -132,7 +132,6 @@ public class AuthService {
         if (claim != null) {
             subject = claim.getBody().getSubject();
             UserDTO user = CacheManager.getProfileCache().get(subject);
-
             CacheManager.getRolesByUserCache().get(subject);
             user.setRoles(CacheManager.getRolesByUserCache().get(subject));
             user.setPermissions(CacheManager.getPermissionsCache().get(subject));

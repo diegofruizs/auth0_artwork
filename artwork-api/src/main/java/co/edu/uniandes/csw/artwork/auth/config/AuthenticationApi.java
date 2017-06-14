@@ -76,8 +76,8 @@ public class AuthenticationApi {
              .body("{\"grant_type\":\"client_credentials\","
              + "\"client_id\": \""+prop.getProperty("clientId")+"\","
              + "\"client_secret\": \""+prop.getProperty("secretKey")+"\","
-             + "\"audience\": \"https://alejandr0.auth0.com/api/v2/\"}").asString();
-     
+             + "\"audience\":\""+prop.getProperty("managementAudience").trim()+"\"}").asString();
+       
      }
      
       public  HttpResponse<String> managementGetUser(String id) throws UnirestException, JSONException{   
