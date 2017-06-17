@@ -82,6 +82,7 @@ public class AuthService {
 
     private final AuthenticationApi auth;
     private final AuthorizationApi authorization;
+    private static boolean logged=false;
 
     public AuthService() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
         this.auth = new AuthenticationApi();
@@ -92,10 +93,15 @@ public class AuthService {
     @Path("/login")
     @POST
     public UserDTO login(UserDTO user) throws UnirestException, JSONException, IOException, InterruptedException, ExecutionException {
-        String str = auth.getSubject(user, rsp);
-        user.setRoles(CacheManager.getRolesByUserCache().get(str));
-        user.setPermissions(CacheManager.getPermissionsCache().get(str));
-
+        String str = "";
+        Integer code = auth.managementUpdateClientGrants().getCode();
+        System.out.println(code);
+        if (code == 200) {
+            str = auth.getSubject(user, rsp);
+            user.setRoles(CacheManager.getRolesByUserCache().get(str));
+            user.setPermissions(CacheManager.getPermissionsCache().get(str));
+            logged = true;
+        }
         return user;
     }
 
@@ -126,8 +132,10 @@ public class AuthService {
     @Path("/me")
     @GET
     public UserDTO getCurrentUser() throws JSONException, UnirestException, IOException, InterruptedException, ExecutionException {
-
-        Jws<Claims> claim = auth.decryptToken(req);
+        Jws<Claims> claim = null;
+        if (logged) {
+            claim = auth.decryptToken(req);
+        }
         String subject = "";
         if (claim != null) {
             subject = claim.getBody().getSubject();

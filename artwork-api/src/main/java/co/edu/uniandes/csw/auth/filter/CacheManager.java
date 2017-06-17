@@ -31,16 +31,18 @@ import org.json.JSONObject;
  * @author Asistente
  */
 public class CacheManager {
- private static AuthorizationApi authorization;
- private static AuthenticationApi authentication;
- private static LoadingCache<String, List<String>> permissionsCache;
- private static LoadingCache<String, List<String>> rolesByUserCache;
- private static LoadingCache<String, HttpResponse<String>> rolesCache;
- private static LoadingCache<String, UserDTO> profileCache;
+
+    private static AuthorizationApi authorization;
+    private static AuthenticationApi authentication;
+    private static LoadingCache<String, List<String>> permissionsCache;
+    private static LoadingCache<String, List<String>> rolesByUserCache;
+    private static LoadingCache<String, HttpResponse<String>> rolesCache;
+    private static LoadingCache<String, UserDTO> profileCache;
+    
 
     static {
         try {
-              authorization = new AuthorizationApi();
+            authorization = new AuthorizationApi();
         } catch (IOException | UnirestException | JSONException ex) {
             Logger.getLogger(CacheManager.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -49,41 +51,41 @@ public class CacheManager {
         } catch (IOException | UnirestException | JSONException | InterruptedException | ExecutionException ex) {
             Logger.getLogger(CacheManager.class.getName()).log(Level.SEVERE, null, ex);
         }
-       
-         permissionsCache = CacheBuilder.newBuilder()
+
+        permissionsCache = CacheBuilder.newBuilder()
                 .maximumSize(10000) // maximum 100 records can be cached
                 .expireAfterAccess(30, TimeUnit.MINUTES) // cache will expire after 30 minutes of access
                 .build(new CacheLoader<String, List<String>>() { // build the cacheloader
 
                     @Override
                     public List<String> load(String userId) throws Exception {
-                        return  getAuthorization().getPermissionsPerRole(getAuthorization().getRolesIDPerUser(getAuthorization().authorizationGetUserRoles(userId)));
-                      
+                        return getAuthorization().getPermissionsPerRole(getAuthorization().getRolesIDPerUser(getAuthorization().authorizationGetUserRoles(userId)));
+
                     }
                 });
-          rolesByUserCache = CacheBuilder.newBuilder()
+        rolesByUserCache = CacheBuilder.newBuilder()
                 .maximumSize(10000) // maximum 100 records can be cached
                 .expireAfterAccess(30, TimeUnit.MINUTES) // cache will expire after 30 minutes of access
                 .build(new CacheLoader<String, List<String>>() { // build the cacheloader
 
                     @Override
                     public List<String> load(String userId) throws Exception {
-                        return  getAuthorization().getRoles(new JSONArray(getAuthorization().authorizationGetUserRoles(userId).getBody()));
-                      
+                        return getAuthorization().getRoles(new JSONArray(getAuthorization().authorizationGetUserRoles(userId).getBody()));
+
                     }
                 });
-         
-          rolesCache = CacheBuilder.newBuilder()
+
+        rolesCache = CacheBuilder.newBuilder()
                 .maximumSize(10000) // maximum 100 records can be cached
                 .expireAfterAccess(30, TimeUnit.MINUTES) // cache will expire after 30 minutes of access
                 .build(new CacheLoader<String, HttpResponse<String>>() { // build the cacheloader
 
                     @Override
                     public HttpResponse<String> load(String userId) throws Exception {
-                        return  getAuthorization().authorizationGetRoles();
+                        return getAuthorization().authorizationGetRoles();
                     }
                 });
-          profileCache = CacheBuilder.newBuilder()
+        profileCache = CacheBuilder.newBuilder()
                 .maximumSize(10000) // maximum 100 records can be cached
                 .expireAfterAccess(30, TimeUnit.MINUTES) // cache will expire after 30 minutes of access
                 .build(new CacheLoader<String, UserDTO>() { // build the cacheloader
@@ -92,9 +94,10 @@ public class CacheManager {
                     public UserDTO load(String userId) throws Exception {
                         HttpResponse<String> resp = getAuthentication().managementGetUser(userId);
                         JSONObject json = new JSONObject(resp.getBody());
-                        return  new UserDTO(json.getJSONObject("user_metadata"));
+                        return new UserDTO(json.getJSONObject("user_metadata"));
                     }
-                });     
+                });
+       
     }
 
     /**
@@ -138,5 +141,6 @@ public class CacheManager {
     public static LoadingCache<String, UserDTO> getProfileCache() {
         return profileCache;
     }
-}
 
+   
+}

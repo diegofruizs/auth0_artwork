@@ -42,138 +42,172 @@ import org.json.JSONObject;
  * @author Asistente
  */
 public class AuthenticationApi {
-    
-  private  Properties prop = new Properties();
-  private InputStream input = null;
-  private String path;
-  private AuthorizationApi authorization;
-  
-  
-  public AuthenticationApi() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException{
-     authorization= new AuthorizationApi(); 
-     
-     path= this.getClass().getProtectionDomain()
-             .getCodeSource().getLocation().toString()
-             .split("target")[0].substring(6)
-             .concat("src/main/java/co/edu/uniandes/csw"
-                     + "/artwork/auth/properties/auth0.properties");
-      try {  
-           input = new FileInputStream(path);
-          try {
-              prop.load(input);
-          } catch (IOException ex) {
-              Logger.getLogger(AuthenticationApi.class.getName()).log(Level.SEVERE, null, ex);
-          }
-      } catch (FileNotFoundException ex) {
-          Logger.getLogger(AuthenticationApi.class.getName()).log(Level.SEVERE, null, ex);
-      }
-   }
-  
-     public HttpResponse<String> managementToken() throws UnirestException{
-         Unirest.setTimeouts(1000, 10000);
-     return Unirest.post(prop.getProperty("accessToken").trim())
-             .header("content-type", "application/json")
-             .body("{\"grant_type\":\"client_credentials\","
-             + "\"client_id\": \""+prop.getProperty("clientId")+"\","
-             + "\"client_secret\": \""+prop.getProperty("secretKey")+"\","
-             + "\"audience\":\""+prop.getProperty("managementAudience").trim()+"\"}").asString();
-       
-     }
-     
-      public  HttpResponse<String> managementGetUser(String id) throws UnirestException, JSONException{   
-          
-          Unirest.setTimeouts(1000, 10000);
-         return Unirest.get(prop.getProperty("users").trim()+"/"+id.replace("|", "%7C"))
-                      .header("content-type", "application/json")
-                      .header("Authorization", "Bearer "+getManagementAccessToken()).asString();    
-    } 
-     
-     public HttpResponse<String> authenticationToken(UserDTO dto) throws UnirestException{
-         Unirest.setTimeouts(1000, 10000);
-    return Unirest.post(prop.getProperty("idTokenResource").trim())
-                     .header("content-type", "application/json")
-                     .body("{\"client_id\":\""+prop.getProperty("authenticationClientId").trim()+"\","
-                     + "\"username\":\""+dto.getUserName()+"\","
-                     + "\"password\":\""+dto.getPassword()+"\","
-                     + "\"connection\":\""+prop.getProperty("connection").trim()+"\","
-                     + "\"scope\":\""+prop.getProperty("scope").trim()+"\"}").asString();  
-    }
-     
-     public  HttpResponse<String> authenticationSignUP(UserDTO dto) throws UnirestException{
-        Unirest.setTimeouts(1000, 10000);
-         return Unirest.post(prop.getProperty("signUp").trim())
-                     .header("content-type", "application/json")
-                     .body("{\"client_id\":\""+prop.getProperty("clientId").trim()+"\","
-                     + "\"email\":\""+dto.getEmail()+"\","
-                     + "\"password\":\""+dto.getPassword()+"\","
-                     + "\"connection\":\""+prop.getProperty("connection").trim()+"\","
-                     + "\"user_metadata\":{\"given_name\":\""+dto.getGivenName()+"\","
-                     + "\"email\":\""+dto.getEmail()+"\","
-                     + "\"username\":\""+dto.getUserName()+"\","
-                     + "\"middle_name\":\""+dto.getMiddleName()+"\","
-                     + "\"sur_name\":\""+dto.getSurName()+"\"}}").asString();
-   }
-     public  HttpResponse<String> authenticationUserInfo(UserDTO dto,HttpServletResponse rsp) throws UnirestException, JSONException{   
-       Unirest.setTimeouts(1000, 10000);
-         return Unirest.get(prop.getProperty("userInfo").trim())
-                      .header("Authorization", "Bearer "+getAuthenticationAccessToken(dto, rsp)).asString();    
-    } 
-   
-   public  void authenticationLogout(){  
-       Unirest.setTimeouts(1000, 10000);
-       Unirest.get(prop.getProperty("logout").trim());  
-   }
-  
-   public String getManagementAccessToken() throws UnirestException, JSONException{
-    HttpResponse<String> res=managementToken();
-    JSONObject json = new JSONObject(res.getBody());
-    return (String) json.get("access_token");
-   }
-    
-   public String getAuthenticationAccessToken(UserDTO dto,HttpServletResponse rsp) throws UnirestException, JSONException{
-      HttpResponse<String> res=authenticationToken(dto);  
-      JSONObject json = new JSONObject(res.getBody());
-      rsp.addHeader("id_token", json.get("id_token").toString());
-   return (String) json.get("access_token");
-   }
-   //get user profile
-  
-   public String getSubject(UserDTO dto,HttpServletResponse rsp) throws UnirestException, JSONException{
-   HttpResponse<String> res = authenticationUserInfo(dto,rsp);
-   JSONObject json = new JSONObject(res.getBody());
-   return  json.get("sub").toString();
-   }
-   
-    public void HttpServletResponseBinder(HttpResponse<String> rsp,HttpServletResponse res) throws IOException{  
-       res.setHeader("content-type", "application/json");
-       res.setStatus(rsp.getCode());
-       res.getWriter().print(rsp.getBody());
-       res.flushBuffer();  
-   }
-   
-    public Jws<Claims> decryptToken(HttpServletRequest req){
-       Cookie[] cookie=req.getCookies();
-       String jwt=null;
-       SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
-       String secret = prop.getProperty("authenticationSecretKey");
-       Key signingKey = new SecretKeySpec(secret.getBytes(), signatureAlgorithm.getJcaName());
-       Jws<Claims> j;
-       for (Cookie c : cookie) {
-       if ("id_token".equals(c.getName())) {
-          jwt = c.getValue();
-        }
-   }
-       try{
-           if(jwt!=null)
-      j= Jwts.parser().setSigningKey(signingKey).parseClaimsJws(jwt);
-           else
-               throw new SignatureException("no autenticado");
-       }catch(SignatureException se){
-        return null;
-       }
-       return j;
-   }
-}
 
-    
-    
+    private Properties prop = new Properties();
+    private InputStream input = null;
+    private String path;
+    private AuthorizationApi authorization;
+
+    public AuthenticationApi() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
+        authorization = new AuthorizationApi();
+
+        path = this.getClass().getProtectionDomain()
+                .getCodeSource().getLocation().toString()
+                .split("target")[0].substring(6)
+                .concat("src/main/java/co/edu/uniandes/csw"
+                        + "/artwork/auth/properties/auth0.properties");
+        try {
+            input = new FileInputStream(path);
+            try {
+                prop.load(input);
+            } catch (IOException ex) {
+                Logger.getLogger(AuthenticationApi.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(AuthenticationApi.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public HttpResponse<String> managementToken() throws UnirestException {
+        Unirest.setTimeouts(1000, 10000);
+        return Unirest.post(prop.getProperty("accessToken").trim())
+                .header("content-type", "application/json")
+                .body("{\"grant_type\":\"client_credentials\","
+                        + "\"client_id\": \"" + prop.getProperty("clientId").trim() + "\","
+                        + "\"client_secret\": \"" + prop.getProperty("secretKey").trim() + "\","
+                        + "\"audience\":\"" + prop.getProperty("managementAudience").trim() + "\"}").asString();
+
+    }
+
+    public HttpResponse<String> managementGetUser(String id) throws UnirestException, JSONException {
+
+        Unirest.setTimeouts(1000, 10000);
+        return Unirest.get(prop.getProperty("users").trim() + "/" + id.replace("|", "%7C"))
+                .header("content-type", "application/json")
+                .header("Authorization", "Bearer " + getManagementAccessToken()).asString();
+    }
+
+    public HttpResponse<String> managementUpdateClientGrants() throws UnirestException, JSONException {
+        Unirest.setTimeouts(1000, 10000);
+        return Unirest.patch(prop.getProperty("managementAudience").trim() + "clients/" + prop.getProperty("authenticationClientId").trim())
+                .header("content-type", "application/json")
+                .header("Authorization", "Bearer " + getManagementAccessToken())
+                .body("{\"grant_types\":[\"password\"]}")
+                .asString();
+    }
+
+    public HttpResponse<String> authenticationToken(UserDTO dto) throws UnirestException {
+        Unirest.setTimeouts(1000, 10000);
+        return Unirest.post(prop.getProperty("accessToken").trim())
+                .header("content-type", "application/json")
+                .body("{"
+                        + "\"grant_type\":\"" + prop.getProperty("grantType").trim() + "\","
+                        + "\"username\":\"" + dto.getUserName() + "\","
+                        + "\"password\":\"" + dto.getPassword() + "\","
+                        + "\"client_id\":\"" + prop.getProperty("authenticationClientId").trim() + "\","
+                        + "\"client_secret\":\"" + prop.getProperty("authenticationSecretKey").trim() + "\""
+                        + "}").asString();
+    }
+
+    public HttpResponse<String> authenticationSignUP(UserDTO dto) throws UnirestException {
+        Unirest.setTimeouts(1000, 10000);
+        return Unirest.post(prop.getProperty("signUp").trim())
+                .header("content-type", "application/json")
+                .body("{\"client_id\":\"" + prop.getProperty("clientId").trim() + "\","
+                        + "\"email\":\"" + dto.getEmail() + "\","
+                        + "\"password\":\"" + dto.getPassword() + "\","
+                        + "\"connection\":\"" + prop.getProperty("connection").trim() + "\","
+                        + "\"user_metadata\":{\"given_name\":\"" + dto.getGivenName() + "\","
+                        + "\"email\":\"" + dto.getEmail() + "\","
+                        + "\"username\":\"" + dto.getUserName() + "\","
+                        + "\"middle_name\":\"" + dto.getMiddleName() + "\","
+                        + "\"sur_name\":\"" + dto.getSurName() + "\"}}").asString();
+    }
+
+    public HttpResponse<String> authenticationUserInfo(UserDTO dto, HttpServletResponse rsp) throws UnirestException, JSONException {
+        Unirest.setTimeouts(1000, 10000);
+        return Unirest.get(prop.getProperty("userInfo").trim())
+                .header("Authorization", "Bearer " + getAuthenticationAccessToken(dto, rsp)).asString();
+    }
+
+    public void authenticationLogout() {
+        Unirest.setTimeouts(1000, 10000);
+        Unirest.get(prop.getProperty("logout").trim());
+    }
+
+    public String getManagementAccessToken() throws UnirestException, JSONException {
+        HttpResponse<String> res = managementToken();
+        JSONObject json = new JSONObject(res.getBody());
+         
+        return (String) json.get("access_token");
+    }
+
+    public String getAuthenticationAccessToken(UserDTO dto, HttpServletResponse rsp) throws UnirestException, JSONException {
+        HttpResponse<String> res = authenticationToken(dto);
+        JSONObject json = new JSONObject(res.getBody());
+         
+        rsp.addHeader("id_token", json.get("id_token").toString());
+        return (String) json.get("access_token");
+    }
+    //get user profile
+
+    public String getSubject(UserDTO dto, HttpServletResponse rsp) throws UnirestException, JSONException {
+        HttpResponse<String> res = authenticationUserInfo(dto, rsp);
+        JSONObject json = new JSONObject(res.getBody());
+        return json.get("sub").toString();
+    }
+
+    public void HttpServletResponseBinder(HttpResponse<String> rsp, HttpServletResponse res) throws IOException {
+        res.setHeader("content-type", "application/json");
+        res.setStatus(rsp.getCode());
+        res.getWriter().print(rsp.getBody());
+        res.flushBuffer();
+    }
+
+    public Jws<Claims> decryptToken(String token) {
+
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
+        String secret = prop.getProperty("authenticationSecretKey");
+        Key signingKey = new SecretKeySpec(secret.getBytes(), signatureAlgorithm.getJcaName());
+        Jws<Claims> j;
+        
+        try {
+            if (token != null) {
+                
+                j = Jwts.parser().setSigningKey(signingKey).parseClaimsJws(token);
+            } else {
+                throw new SignatureException("no autenticado");
+            }
+        } catch (SignatureException se) {
+            return null;
+        }
+        return j;
+    }
+
+    public Jws<Claims> decryptToken(HttpServletRequest req) {
+
+        Cookie[] cookie = req.getCookies();
+        String jwt = null;
+
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.RS256;
+        String secret = prop.getProperty("authenticationSecretKey");
+        Key signingKey = new SecretKeySpec(secret.getBytes(), signatureAlgorithm.getJcaName());
+        Jws<Claims> j;
+        for (Cookie c : cookie) {
+            if ("id_token".equals(c.getName())) {
+                jwt = c.getValue();
+
+            }
+        }
+        try {
+            if (jwt != null) {
+                j = Jwts.parser().setSigningKey(signingKey).parseClaimsJws(jwt);
+            } else {
+                throw new SignatureException("no autenticado");
+            }
+        } catch (SignatureException se) {
+            return null;
+        }
+        return j;
+    }
+}
