@@ -62,7 +62,9 @@ public class FiltroAutenticacion implements Filter {
    */
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-    if (!((HttpServletRequest) request).getPathInfo().equals("/users/login")) {
+    String pathInfo = ((HttpServletRequest) request).getPathInfo();
+    
+    if (!pathInfo.equals("/users/login")) {
       WebApplicationExceptionMapper mapper = new WebApplicationExceptionMapper();
       String usuario = null, jwt = null, secret, path, host;
       List<String> roles = new ArrayList<>();

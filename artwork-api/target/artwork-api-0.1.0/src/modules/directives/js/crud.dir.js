@@ -63,6 +63,37 @@
             }]
         };
     }]);
+  
+  /**
+     * @ngdoc directive
+     * @name ngCrud.directive:searchBar
+     * @priority 0
+     * @restrict E
+     * @scope
+     * 
+     * @param {expression} name name to show in toolbar
+     * @param {object} fields definition of the search fields
+     * @param {expression} record object to which the result is mapped
+     * @param {function} submitFn function to execute when submitting
+     * 
+     * @description Creates a search form
+     */
+    mod.directive('ifRol', ['CrudTemplatesDir', 'authService', function (tplDir, authService) {
+        function link(scope, element, attrs){
+          var roles = authService.getRoles();
+          var askedRoles = scope.name;
+          if(roles.indexOf(askedRoles) === -1){
+            angular.element(element).css({display: 'none'});
+          }
+        }
+        return {
+            scope: {
+                name: '='
+            },
+            restrict: 'A',
+            templateUrl: tplDir + 'search.tpl.html'
+        };
+    }]);
 
     /**
      * @ngdoc directive
