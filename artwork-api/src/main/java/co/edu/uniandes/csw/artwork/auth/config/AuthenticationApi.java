@@ -145,7 +145,7 @@ public class AuthenticationApi {
     public String getAuthenticationAccessToken(UserDTO dto, HttpServletResponse rsp) throws UnirestException, JSONException {
         HttpResponse<String> res = authenticationToken(dto);
         JSONObject json = new JSONObject(res.getBody());
-         
+         System.out.println(json);
         rsp.addHeader("id_token", json.get("id_token").toString());
         return (String) json.get("access_token");
     }
