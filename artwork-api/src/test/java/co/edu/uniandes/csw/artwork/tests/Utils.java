@@ -23,12 +23,36 @@ SOFTWARE.
 */
 package co.edu.uniandes.csw.artwork.tests;
 
+import co.edu.uniandes.csw.auth.conexions.AuthenticationApi;
+import com.mashape.unirest.http.exceptions.UnirestException;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.json.JSONException;
+
 /**
  *
  * @generate
  */
 public class Utils {
+    public static AuthenticationApi auth;
+    public static String propUsername;
+    public static String propPassword;
+    static{
+        try {
+            auth = new AuthenticationApi();
+            propUsername = auth.getProp().getProperty("username").trim();
+            propPassword = auth.getProp().getProperty("password").trim();
+        } catch (IOException | UnirestException | JSONException | InterruptedException | ExecutionException ex) {
+            Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     public static final String apiPath = "api";
-    public static final String username = System.getenv("USERNAME_USER");
-    public static final String password = System.getenv("PASSWORD_USER"); 
+    public static final String username = propUsername;
+    public static final String password = propPassword;
+ 
+    
+    
 }

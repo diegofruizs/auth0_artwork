@@ -19,13 +19,13 @@ SOFTWARE.
 */
 package co.edu.uniandes.csw.artwork.tests.rest;
 
-import co.edu.uniandes.csw.artwork.auth.config.AuthenticationApi;
-import co.edu.uniandes.csw.artwork.dtos.minimum.UserDTO;
+import co.edu.uniandes.csw.auth.conexions.AuthenticationApi;
+import co.edu.uniandes.csw.auth.model.UserDTO;
 import co.edu.uniandes.csw.artwork.entities.ArtistEntity;
 import co.edu.uniandes.csw.artwork.dtos.detail.ArtistDetailDTO;
 import co.edu.uniandes.csw.artwork.dtos.minimum.ArtistDTO;
 import co.edu.uniandes.csw.artwork.resources.ArtistResource;
-import co.edu.uniandes.csw.artwork.resources.AuthService;
+import co.edu.uniandes.csw.auth.service.AuthService;
 import co.edu.uniandes.csw.artwork.tests.Utils;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import java.io.File;
@@ -195,11 +195,11 @@ public class ArtistTest {
      */
     @Test
     public void createArtistTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
-       String token= login("sunshine3@ck.com","Sunshine3");
+       String token= login("su@su.com","Sunshine3");
         ArtistDetailDTO artist = factory.manufacturePojo(ArtistDetailDTO.class);
         Response response = target
             .request()
-                .cookie("username", "sunshine3@ck.com")
+                .cookie("username", "su@su.com")
                 .cookie("id_token",token)
             .post(Entity.entity(artist, MediaType.APPLICATION_JSON));
 
@@ -214,12 +214,12 @@ public class ArtistTest {
     }
      @Test
     public void getArtistByIdTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
-        String token= login("sunshine3@ck.com","Sunshine3");
+        String token= login("su@su.com","Sunshine3");
 
         ArtistDTO artistTest = target
             .path(oraculo.get(0).getId().toString())
             .request()
-                .cookie("username", "sunshine3@ck.com")
+                .cookie("username", "su@su.com")
                 .cookie("id_token",token)
                 .get(ArtistDTO.class);
         
@@ -234,11 +234,11 @@ public class ArtistTest {
      */
     @Test
     public void listArtistTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
-        String token= login("sunshine3@ck.com","Sunshine3");
+        String token= login("su@su.com","Sunshine3");
 
         Response response = target
             .request()
-                .cookie("username", "sunshine3@ck.com")
+                .cookie("username", "su@su.com")
                 .cookie("id_token",token)
                 .get();
 
@@ -255,7 +255,7 @@ public class ArtistTest {
      */
     @Test
     public void updateArtistTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
-        String token= login("sunshine3@ck.com","Sunshine3");
+        String token= login("su@su.com","Sunshine3");
         ArtistDTO artist = new ArtistDTO(oraculo.get(0));
 
         ArtistDTO artistChanged = factory.manufacturePojo(ArtistDTO.class);
@@ -265,7 +265,7 @@ public class ArtistTest {
         Response response = target
             .path(artist.getId().toString())
             .request()    
-            .cookie("username", "sunshine3@ck.com")
+            .cookie("username", "su@su.com")
              .cookie("id_token",token)
             .put(Entity.entity(artist, MediaType.APPLICATION_JSON));
 
@@ -282,12 +282,12 @@ public class ArtistTest {
      */
     @Test
     public void deleteArtistTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
-        String token= login("sunshine3@ck.com","Sunshine3");
+        String token= login("su@su.com","Sunshine3");
         ArtistDTO artist = new ArtistDTO(oraculo.get(0));
         Response response = target
             .path(artist.getId().toString())
             .request()
-             .cookie("username", "sunshine3@ck.com")
+             .cookie("username", "su@su.com")
              .cookie("id_token",token).delete();
 
         Assert.assertEquals(OK_WITHOUT_CONTENT, response.getStatus());

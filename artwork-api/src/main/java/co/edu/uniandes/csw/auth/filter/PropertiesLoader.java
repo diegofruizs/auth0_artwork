@@ -39,7 +39,7 @@ public class PropertiesLoader {
              .getCodeSource().getLocation().toString()
              .split("target")[0].substring(6)
              .concat("src/main/java/co/edu/uniandes/csw"
-                     + "/artwork/auth/properties/auth0.properties");
+                     + "/auth/properties/auth0.properties");
   input = new FileInputStream(file);
   prop.load(input);
   }

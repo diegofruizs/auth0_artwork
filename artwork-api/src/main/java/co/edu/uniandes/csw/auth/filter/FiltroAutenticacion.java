@@ -1,9 +1,10 @@
 package co.edu.uniandes.csw.auth.filter;
 
-import co.edu.uniandes.csw.artwork.auth.config.AuthenticationApi;
-import co.edu.uniandes.csw.artwork.auth.config.AuthorizationApi;
+import co.edu.uniandes.csw.auth.conexions.CacheManager;
+import co.edu.uniandes.csw.auth.conexions.AuthenticationApi;
+import co.edu.uniandes.csw.auth.conexions.AuthorizationApi;
 import co.edu.uniandes.csw.artwork.exceptions.BusinessLogicException;
-import co.edu.uniandes.csw.auth.provider.WebApplicationExceptionMapper;
+import co.edu.uniandes.csw.artwork.exceptions.WebApplicationExceptionMapper;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import io.jsonwebtoken.Claims;
@@ -74,7 +75,7 @@ public class FiltroAutenticacion implements Filter {
         resource = path.split("/")[2];
         boolean allowedPath = prop.containsKey(path);
         Cookie[] cookie = ((HttpServletRequest) request).getCookies();
-
+        
         for (Cookie c : cookie) {
             if ("id_token".equals(c.getName())) {
                 jwt = c.getValue();

@@ -26,7 +26,8 @@ SOFTWARE.
             xmlns="http://jboss.org/schema/arquillian"
             xsi:schemaLocation="http://jboss.org/schema/arquillian http://www.jboss.org/schema/arquillian/arquillian_1_0.xsd">
     <extension qualifier="webdriver">
-        <property name="browser">firefox</property>
+        <property name="chromeDriverBinary">${basedir}/chromedriver.exe</property>
+        <property name="browser">chrome</property>
     </extension>
     <extension qualifier="graphene">
         <!-- https://docs.jboss.org/author/display/ARQGRA2/Graphene+Configuration -->

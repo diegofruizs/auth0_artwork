@@ -23,7 +23,7 @@ SOFTWARE.
 */
 package co.edu.uniandes.csw.artwork.tests.rest;
 
-import co.edu.uniandes.csw.artwork.dtos.minimum.UserDTO;
+import co.edu.uniandes.csw.auth.model.UserDTO;
 import co.edu.uniandes.csw.artwork.entities.CategoryEntity;
 import co.edu.uniandes.csw.artwork.dtos.detail.CategoryDetailDTO;
 import co.edu.uniandes.csw.artwork.resources.CategoryResource;

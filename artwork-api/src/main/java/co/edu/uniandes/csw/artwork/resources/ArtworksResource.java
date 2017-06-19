@@ -23,7 +23,7 @@ SOFTWARE.
 */
 package co.edu.uniandes.csw.artwork.resources;
 
-import co.edu.uniandes.csw.auth.provider.StatusCreated;
+import co.edu.uniandes.csw.auth.filter.StatusCreated;
 import java.util.List;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletResponse;
