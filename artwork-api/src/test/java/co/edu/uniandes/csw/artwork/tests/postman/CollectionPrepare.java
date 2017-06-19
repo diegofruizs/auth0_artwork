@@ -9,7 +9,11 @@ import co.edu.uniandes.csw.artwork.dtos.detail.ArtistDetailDTO;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Iterator;
+import java.lang.Class;
+import java.lang.reflect.InvocationTargetException;
 /**
  *
  * @author Asistente
@@ -29,24 +33,33 @@ public class CollectionPrepare  {
            }
     return count;
  }
-public static void setCollectionBody(JsonElement jsonElement,Integer index,ArtistDetailDTO artist,Gson gson){
-    
-    String val="{\"name\":\""+artist.getName()+"\",\"id\":\""+artist.getId()+"\"}";
-   
+public static void setCollectionBody(JsonElement jsonElement,Integer index,ArtistDetailDTO artist,Gson gson) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException{
+
+String val=getFields(artist);
+ 
 jsonElement.getAsJsonObject().get("item")
       .getAsJsonArray().get(index)
       .getAsJsonObject().get("request")
       .getAsJsonObject().get("body")
       .getAsJsonObject().addProperty("raw", val);
 }
-
     /**
      * @return the PATH
      */
     public static String getPATH() {
         return PATH;
     }
-    
+    public static String getFields(ArtistDetailDTO artist) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException{
+        String open="{\"";
+        String content="";
+        String close="}";
+       for(Method m:artist.getClass().getMethods()){
+           if(m.getName().contains("get") & !"getClass".equals(m.getName())) {
+         content=content.concat(m.getName().substring(3).toLowerCase().concat("\":\"").concat(m.invoke(artist, null).toString().concat("\",\""))); 
+           }
+       }
+     return open.concat(content).substring(0,open.concat(content).length()-2 ).concat(close);
+    }
   
 }
       

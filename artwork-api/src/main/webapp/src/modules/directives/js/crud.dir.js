@@ -15,17 +15,17 @@
      * @description Creates a search form
      */
     mod.directive('searchBar', ['CrudTemplatesDir', function (tplDir) {
-        return {
-            scope: {
-                name: '=',
-                fields: '=*',
-                record: '=',
-                submitFn: '&'
-            },
-            restrict: 'E',
-            templateUrl: tplDir + 'search.tpl.html'
-        };
-    }]);
+            return {
+                scope: {
+                    name: '=',
+                    fields: '=*',
+                    record: '=',
+                    submitFn: '&'
+                },
+                restrict: 'E',
+                templateUrl: tplDir + 'search.tpl.html'
+            };
+        }]);
 
     /**
      * @ngdoc directive
@@ -45,24 +45,17 @@
      * 
      */
     mod.directive('listRecords', ['CrudTemplatesDir', function (tplDir) {
-        return {
-            scope: {
-                records: '=*',
-                fields: '=*',
-                actions: '=*?',
-                checklist: '=?'
-            },
-            restrict: 'E',
-            templateUrl: tplDir + 'list.tpl.html',
-            controller: ['$scope', function ($scope) {
-                $scope.checkAll = function () {
-                    this.records.forEach(function (item) {
-                        item.selected = !item.selected;
-                    });
-                };
-            }]
-        };
-    }]);
+            return {
+                scope: {
+                    records: '=*',
+                    fields: '=*',
+                    actions: '=*?',
+                    name: '=',
+                    checklist: '=?'
+                },
+                restrict: 'E',
+                templateUrl: tplDir + 'list.tpl.html',
+                controller: ['$scope', '$cookies', function ($scope, $cookies) {
   
   /**
      * @ngdoc directive
@@ -95,6 +88,42 @@
         };
     }]);
 
+                        var permissions = $cookies.get("permissions");
+                        permissions = permissions.replace(/[["']+/g, "").replace(/]+/g, "").split(",");
+                        var actions = $scope.actions;
+                        var allowedButtons = [];
+                        var name = $scope.name.toLowerCase().concat("s");
+                       
+                        for (var key in permissions) {
+                            
+                            if (permissions[key].includes(name)) {
+                                if ("read" === permissions[key].split(":")[0])
+                                    allowedButtons.push("list", "detail", "artworks", "refresh");
+                                if ("update" === permissions[key].split(":")[0])
+                                    allowedButtons.push("edit", "save", "cancel");
+                                if ("create" === permissions[key].split(":")[0])
+                                    allowedButtons.push("create");
+                                if ("delete" === permissions[key].split(":")[0])
+                                    allowedButtons.push("delete");
+                            }
+                        }
+                        for (var action in actions) {
+                            if (allowedButtons.indexOf(action) === -1)
+                                delete actions[action];
+                        }
+                     
+                        $scope.actions = actions;
+
+
+                        $scope.checkAll = function () {
+                            this.records.forEach(function (item) {
+                                item.selected = !item.selected;
+                            });
+                        };
+                    }]
+            };
+        }]);
+
     /**
      * @ngdoc directive
      * @name ngCrud.directive:datatable
@@ -116,13 +145,14 @@
                 scope: {
                     records: '=*',
                     fields: '=*',
+                    name: '=',
                     actions: '=*?'
                 },
                 restrict: 'E',
                 templateUrl: tplDir + 'dataTable.tpl.html',
-                controller: ['$scope', function ($scope) {
-                 
-                   
+                controller: ['$scope', '$cookies', function ($scope, $cookies) {
+
+
                         // Grid header definitions
                         var columnDefsValues = [];
                         angular.forEach($scope.fields, function (value, key)
@@ -137,37 +167,63 @@
                                 this.push({name: value.displayName, field: recordValue, enableFiltering: (value.enableFiltering === undefined || value.enableFiltering), minWidth: (value.displayName.length * 40)});
                             }
                         }, columnDefsValues);
-                        
+
                         // Grid row actions definitions
-            var columnActionsValues = [];
-            angular.forEach($scope.actions, function(value, key) 
-            {
-                this.push('<button class="btn btn-default btn-sm" type="button" ng-hide="grid.appScope.actions.' + key + '.show && !grid.appScope.actions.' + key + '.show(row.entity)" ng-click="grid.appScope.actions.' + key + '.fn(row.entity)"><span class="glyphicon glyphicon-' + value.icon + '"></span> <md-tooltip>' + value.displayName  + '</md-tooltip></button>');
-            }, columnActionsValues);
-            
-            columnDefsValues.push({name:'Acciones', cellTemplate: '<div>' + columnActionsValues.join(" " ) + '</div>', enableFiltering:false, enableSorting: false, pinnedRight:true, width:250 });
-            
-            
-            $scope.gridOptions  = 
-            {                
-                useExternalPagination: true,
-                useExternalSorting: false,
-                enablePinning:true,
-                enableColumnResizing: true,
-                exporterMenuCsv: true,
-                enableGridMenu: true,
-                enableFiltering: true,
-                enableSorting: true,
-                columnDefs: columnDefsValues,
-                data : $scope.records,
-                totalItems :  $scope.records.totalRecords
-            }; 
-            
-            
+                        var columnActionsValues = [];
+                        var permissions = $cookies.get("permissions");
+                        permissions = permissions.replace(/[["']+/g, "").replace(/]+/g, "").split(",");
+                        var actions = $scope.actions;
+                        var allowedButtons = [];
+                        var name = $scope.name.toLowerCase().concat("s");
+                        
+                        
+                        for (var key in permissions) {
+                            if (permissions[key].includes(name)) {
+                                if ("read" === permissions[key].split(":")[0])
+                                    allowedButtons.push("list", "artworks", "refresh");
+                                if ("update" === permissions[key].split(":")[0])
+                                    allowedButtons.push("edit", "save", "cancel");
+                                if ("create" === permissions[key].split(":")[0])
+                                    allowedButtons.push("create");
+                                if ("delete" === permissions[key].split(":")[0])
+                                    allowedButtons.push("delete");
+                            }
+                        }
+                        for (var action in actions) {
+                            if (allowedButtons.indexOf(action) === -1)
+                                delete actions[action];
+                        }
+                       
+                        $scope.actions = actions;
+
+                        angular.forEach($scope.actions, function (value, key)
+                        {
+                            this.push('<button class="btn btn-default btn-sm" type="button" ng-hide="grid.appScope.actions.' + key + '.show && !grid.appScope.actions.' + key + '.show(row.entity)" ng-click="grid.appScope.actions.' + key + '.fn(row.entity)"><span class="glyphicon glyphicon-' + value.icon + '"></span> <md-tooltip>' + value.displayName + '</md-tooltip></button>');
+                        }, columnActionsValues);
+
+                        columnDefsValues.push({name: 'Acciones', cellTemplate: '<div>' + columnActionsValues.join(" ") + '</div>', enableFiltering: false, enableSorting: false, pinnedRight: true, width: 250});
+
+
+                        $scope.gridOptions =
+                                {
+                                    useExternalPagination: true,
+                                    useExternalSorting: false,
+                                    enablePinning: true,
+                                    enableColumnResizing: true,
+                                    exporterMenuCsv: true,
+                                    enableGridMenu: true,
+                                    enableFiltering: true,
+                                    enableSorting: true,
+                                    columnDefs: columnDefsValues,
+                                    data: $scope.records,
+                                    totalItems: $scope.records.totalRecords
+                                };
+
+
                     }]
             };
-            
-            
+
+
         }]);
 
     /**
@@ -178,17 +234,17 @@
      * @scope
      */
     mod.directive('gallery', ['CrudTemplatesDir', function (tplDir) {
-        return {
-            scope: {
-                records: '=*',
-                fields: '=*',
-                actions: '=*?',
-                checklist: '=?'
-            },
-            restrict: 'E',
-            templateUrl: tplDir + 'gallery.tpl.html'
-        };
-    }]);
+            return {
+                scope: {
+                    records: '=*',
+                    fields: '=*',
+                    actions: '=*?',
+                    checklist: '=?'
+                },
+                restrict: 'E',
+                templateUrl: tplDir + 'gallery.tpl.html'
+            };
+        }]);
 
     /**
      * @ngdoc directive
@@ -197,40 +253,46 @@
      * @restrict E
      * @scope
      */
-    mod.directive('toolbar', ['CrudTemplatesDir','authService', function (tplDir,auth) {
-        return {
-            scope: {
-                actions: '=*',
-                name: '=',
-                displayName: '='
-            },
-            restrict: 'E',
-            templateUrl: tplDir + 'toolbar.tpl.html',
-            controller: ['$scope', function ($scope) {
-                    
-             auth.userAuthenticated().then(function (data) {
-                $scope.currentUser = data.data;
-                var name=$scope.displayName.charAt(0).toLowerCase()+$scope.displayName.slice(1);
-                if ($scope.currentUser !== "" && !$scope.menuitems) {
-                    for(var rol in auth.getRoles())
-                        if($scope.currentUser["roles"].indexOf(rol)>-1 & $scope.currentUser["roles"].indexOf(name)>-1){
-                             for(var profile in auth.getRoles()[rol]){
-                                if(auth.getRoles()[rol][profile]["options"]){
-                                    for(var action in $scope.actions )
-                                        if(auth.getRoles()[rol][profile]["options"].indexOf(action)==-1){
-                                           delete $scope.actions[action]; 
-                                        }
+    mod.directive('toolbar', ['CrudTemplatesDir', 'authService', function (tplDir, auth) {
+            return {
+                scope: {
+                    actions: '=*',
+                    name: '=',
+                    displayName: '='
+                },
+                restrict: 'E',
+                templateUrl: tplDir + 'toolbar.tpl.html',
+                controller: ['$scope', '$cookies', function ($scope, $cookies) {
+                        var permissions = $cookies.get("permissions");
+                        permissions = permissions.replace(/[["']+/g, "").replace(/]+/g, "").split(",");
+                        var actions = $scope.actions;
+                        $scope.actions = {};
+                        var allowedButtons = [];
+                        var name = $scope.displayName.toLowerCase().concat("s");
+                       
+                        for (var key in permissions) {
+                            
+                            if (permissions[key].includes(name)) {
+                                if ("read" === permissions[key].split(":")[0])
+                                    allowedButtons.push("list", "artworks", "refresh");
+                                if ("update" === permissions[key].split(":")[0])
+                                    allowedButtons.push("edit", "save", "cancel");
+                                if ("create" === permissions[key].split(":")[0])
+                                    allowedButtons.push("create");
+                                if ("delete" === permissions[key].split(":")[0])
+                                    allowedButtons.push("delete");
+                            }
+                        }
+                        for (var action in actions) {
+                            if (allowedButtons.indexOf(action) === -1)
+                                delete actions[action];
+                        }
+                        $scope.actions = actions;
 
-                                }
-                            } 
-               }
-                } 
-               
-            });
-           
-            }]
-        };
-    }]);
+
+                    }]
+            };
+        }]);
 
     /**
      * @ngdoc directive
@@ -252,20 +314,20 @@
      * </pre>
      */
     mod.directive('crudForm', ['CrudTemplatesDir', function (tplDir) {
-        return {
-            scope: {
-                fields: '=*',
-                record: '=',
-                listsOfValues: '=*?'
-            },
-            require: ['^^form'],
-            restrict: 'E',
-            templateUrl: tplDir + 'form.tpl.html',
-            link: function(scope, elem, attr, controllers){
-                scope.form = controllers[0];
-            }
-        };
-    }]);
+            return {
+                scope: {
+                    fields: '=*',
+                    record: '=',
+                    listsOfValues: '=*?'
+                },
+                require: ['^^form'],
+                restrict: 'E',
+                templateUrl: tplDir + 'form.tpl.html',
+                link: function (scope, elem, attr, controllers) {
+                    scope.form = controllers[0];
+                }
+            };
+        }]);
 
     /**
      * @ngdoc directive
@@ -285,31 +347,31 @@
      * </pre>
      */
     mod.directive('datePicker', ['CrudTemplatesDir', function (tplDir) {
-        return {
-            scope: {
-                model: '=',
-                value: '='
-            },
-            restrict: 'E',
-            templateUrl: tplDir + 'datepicker.tpl.html',
-            controller: ['$scope', function ($scope) {
-                $scope.today = function () {
-                    $scope.value = new Date();
-                };
+            return {
+                scope: {
+                    model: '=',
+                    value: '='
+                },
+                restrict: 'E',
+                templateUrl: tplDir + 'datepicker.tpl.html',
+                controller: ['$scope', function ($scope) {
+                        $scope.today = function () {
+                            $scope.value = new Date();
+                        };
 
-                $scope.clear = function () {
-                    $scope.value = null;
-                };
+                        $scope.clear = function () {
+                            $scope.value = null;
+                        };
 
-                $scope.open = function ($event) {
-                    $event.preventDefault();
-                    $event.stopPropagation();
+                        $scope.open = function ($event) {
+                            $event.preventDefault();
+                            $event.stopPropagation();
 
-                    $scope.opened = true;
-                };
-            }]
-        };
-    }]);
+                            $scope.opened = true;
+                        };
+                    }]
+            };
+        }]);
 
     /**
      * @ngdoc directive
@@ -331,82 +393,83 @@
      * </pre>
      */
     mod.directive('moveLists', ['CrudTemplatesDir', function (tplDir) {
-        return {
-            scope: {
-                selected: '=*',
-                available: '=*'
-            },
-            restrict: 'E',
-            templateUrl: tplDir + 'move-lists.tpl.html',
-            controllerAs: '$ctrl',
-            controller: ['$scope', function ($scope) {
-                function move(src, dst, marked) {
-                    // If selected is undefined, all records from src are moved to dst
-                    if (!!marked) {
-                        for (var i = 0; i < marked.length; i++) {
-                            if (marked.hasOwnProperty(i)) {
-                                var index = null;
-                                for (var j = 0; j < src.length; j++) {
-                                    if (src.hasOwnProperty(j)) {
-                                        if (src[j].id === marked[i].id) {
-                                            index = j;
-                                            break;
+            return {
+                scope: {
+                    selected: '=*',
+                    available: '=*'
+                },
+                restrict: 'E',
+                templateUrl: tplDir + 'move-lists.tpl.html',
+                controllerAs: '$ctrl',
+                controller: ['$scope', function ($scope) {
+                        function move(src, dst, marked) {
+                            // If selected is undefined, all records from src are moved to dst
+                            if (!!marked) {
+                                for (var i = 0; i < marked.length; i++) {
+                                    if (marked.hasOwnProperty(i)) {
+                                        var index = null;
+                                        for (var j = 0; j < src.length; j++) {
+                                            if (src.hasOwnProperty(j)) {
+                                                if (src[j].id === marked[i].id) {
+                                                    index = j;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (index !== null) {
+                                            dst.push(src.splice(index, 1)[0]);
                                         }
                                     }
                                 }
-                                if (index !== null) {
-                                    dst.push(src.splice(index, 1)[0]);
-                                }
+                            } else {
+                                dst.push.apply(dst, src);
+                                src.splice(0, src.length);
                             }
                         }
-                    } else {
-                        dst.push.apply(dst, src);
-                        src.splice(0, src.length);
-                    }
-                }
 
-                move($scope.available, [], $scope.selected);
-                $scope.selectedMarked = [];
-                $scope.availableMarked = [];
+                        move($scope.available, [], $scope.selected);
+                        $scope.selectedMarked = [];
+                        $scope.availableMarked = [];
 
-                this.addSome = function () {
-                    move($scope.available, $scope.selected, $scope.availableMarked);
-                    $scope.availableMarked = [];
-                };
-                this.addAll = function () {
-                    move($scope.available, $scope.selected);
-                    $scope.availableMarked = [];
-                };
-                this.removeSome = function () {
-                    move($scope.selected, $scope.available, $scope.selectedMarked);
-                    $scope.selectedMarked = [];
-                };
-                this.removeAll = function () {
-                    move($scope.selected, $scope.available);
-                    $scope.selectedMarked = [];
-                };
-            }]
-        };
-    }]);
- mod.directive('breadcrumb', ['CrudTemplatesDir', function (tplDir) {
-        return {
-            scope: {
-                link: '=*'
-            },
-            restrict: 'E',
-            templateUrl: tplDir + 'breadcrumb.tpl.html',
-            controller:['$scope','$cookies', function($scope,$cookies){
-                    $scope.urls={};
-var validUrls=["Artist","Client","Item","Product","Artwork","Category",]
-                 var search="?page=1&limit=15";
-                    $cookies.put($scope.link,window.location.href.split("?")[0]+search);
-                    for(key in $cookies.getAll()){
-                        if(validUrls.indexOf(key)>-1)
-                        if(key !== 'undefined')
-                                $scope.urls[key]=$cookies.get(key);
-                    };     
-            }]
-        };
-    }]);
+                        this.addSome = function () {
+                            move($scope.available, $scope.selected, $scope.availableMarked);
+                            $scope.availableMarked = [];
+                        };
+                        this.addAll = function () {
+                            move($scope.available, $scope.selected);
+                            $scope.availableMarked = [];
+                        };
+                        this.removeSome = function () {
+                            move($scope.selected, $scope.available, $scope.selectedMarked);
+                            $scope.selectedMarked = [];
+                        };
+                        this.removeAll = function () {
+                            move($scope.selected, $scope.available);
+                            $scope.selectedMarked = [];
+                        };
+                    }]
+            };
+        }]);
+    mod.directive('breadcrumb', ['CrudTemplatesDir', function (tplDir) {
+            return {
+                scope: {
+                    link: '=*'
+                },
+                restrict: 'E',
+                templateUrl: tplDir + 'breadcrumb.tpl.html',
+                controller: ['$scope', '$cookies', function ($scope, $cookies) {
+                        $scope.urls = {};
+                        var validUrls = ["Artist", "Client", "Item", "Product", "Artwork", "Category", ]
+                        var search = "?page=1&limit=15";
+                        $cookies.put($scope.link, window.location.href.split("?")[0] + search);
+                        for (var key in $cookies.getAll()) {
+                            if (validUrls.indexOf(key) > -1)
+                                if (key !== 'undefined')
+                                    $scope.urls[key] = $cookies.get(key);
+                        }
+                        ;
+                    }]
+            };
+        }]);
 })(window.angular);
 

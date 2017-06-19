@@ -13,6 +13,14 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 
+import java.lang.Class;
+import java.lang.Object;
+import java.util.concurrent.TimeUnit;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
+
 /**
  *
  * @author Asistente
@@ -24,12 +32,14 @@ public class PropertiesLoader {
   private  String file;
   
   public PropertiesLoader() throws FileNotFoundException, IOException{
+  //resolve a cache manager
+ 
   prop=new Properties();
   file=this.getClass().getProtectionDomain()
              .getCodeSource().getLocation().toString()
              .split("target")[0].substring(6)
              .concat("src/main/java/co/edu/uniandes/csw"
-                     + "/artwork/auth/properties/authentication.properties");
+                     + "/artwork/auth/properties/auth0.properties");
   input = new FileInputStream(file);
   prop.load(input);
   }
@@ -37,9 +47,9 @@ public class PropertiesLoader {
   public List<String> getPropertyAsList(String property){
   return  Collections.arrayToList(prop.getProperty(property).trim().split(","));   
   }
-  
-  public String getPropertyAsString(String property){
-  return prop.getProperty(property).trim();
+   
+  public  String getPropertyAsString(String property){
+  return   prop.getProperty(property).trim();
   }
   
   public Boolean containsKey(String s){

@@ -1,18 +1,14 @@
 /*
 The MIT License (MIT)
-
 Copyright (c) 2015 Los Andes University
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,6 +23,7 @@ import co.edu.uniandes.csw.artwork.auth.config.AuthenticationApi;
 import co.edu.uniandes.csw.artwork.dtos.minimum.UserDTO;
 import co.edu.uniandes.csw.artwork.entities.ArtistEntity;
 import co.edu.uniandes.csw.artwork.dtos.detail.ArtistDetailDTO;
+import co.edu.uniandes.csw.artwork.dtos.minimum.ArtistDTO;
 import co.edu.uniandes.csw.artwork.resources.ArtistResource;
 import co.edu.uniandes.csw.artwork.resources.AuthService;
 import co.edu.uniandes.csw.artwork.tests.Utils;
@@ -36,6 +33,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 import javax.transaction.UserTransaction;
 import javax.persistence.EntityManager;
@@ -57,6 +55,7 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -77,9 +76,9 @@ public class ArtistTest {
     private final String password = Utils.password;
     PodamFactory factory = new PodamFactoryImpl();
 
-    private final int Ok = Status.OK.getStatusCode();
+    private final int OK = Status.OK.getStatusCode();
     private final int Created = Status.CREATED.getStatusCode();
-    private final int OkWithoutContent = Status.NO_CONTENT.getStatusCode();
+    private final int OK_WITHOUT_CONTENT = Status.NO_CONTENT.getStatusCode();
 
     private final static List<ArtistEntity> oraculo = new ArrayList<>();
 
@@ -177,15 +176,13 @@ public class ArtistTest {
      * @generated
      */
     
-     public String login(String username, String password) throws IOException, UnirestException, JSONException { 
+     public String login(String username, String password) throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException { 
         auth=new AuthenticationApi();
         UserDTO user = new UserDTO();
         user.setUserName(username);
         user.setPassword(password);
-        roles = auth.login(user);
-        return auth.getToken(user);
-        
-      
+        JSONObject json = new JSONObject(auth.authenticationToken(user).getBody()); 
+        return (String)json.get("id_token");
     }
    
     
@@ -197,16 +194,13 @@ public class ArtistTest {
      * @generated
      */
     @Test
-    public void createArtistTest() throws IOException, UnirestException, JSONException {
-       String token= login("alejand@alejando.com","Sunshine3");
-     
+    public void createArtistTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
+       String token= login("sunshine3@ck.com","Sunshine3");
         ArtistDetailDTO artist = factory.manufacturePojo(ArtistDetailDTO.class);
         Response response = target
             .request()
-                .cookie("username", "alejand@alejando.com")
+                .cookie("username", "sunshine3@ck.com")
                 .cookie("id_token",token)
-                .cookie("roles",roles)
-                
             .post(Entity.entity(artist, MediaType.APPLICATION_JSON));
 
         ArtistDetailDTO  artistTest = (ArtistDetailDTO) response.readEntity(ArtistDetailDTO.class);
@@ -218,22 +212,16 @@ public class ArtistTest {
         ArtistEntity entity = em.find(ArtistEntity.class, artistTest.getId());
         Assert.assertNotNull(entity);
     }
+     @Test
+    public void getArtistByIdTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
+        String token= login("sunshine3@ck.com","Sunshine3");
 
-    /**
-     * Prueba para consultar un Artist
-     *
-     * @generated
-     */
-    @Test
-    public void getArtistByIdTest() throws IOException, UnirestException, JSONException {
-    String token= login("alejand@alejando.com","Sunshine3");
-        ArtistDetailDTO artistTest = target
+        ArtistDTO artistTest = target
             .path(oraculo.get(0).getId().toString())
             .request()
-                .cookie("username", "alejand@alejando.com")
+                .cookie("username", "sunshine3@ck.com")
                 .cookie("id_token",token)
-                .cookie("roles",roles)
-                .get(ArtistDetailDTO.class);
+                .get(ArtistDTO.class);
         
         Assert.assertEquals(artistTest.getId(), oraculo.get(0).getId());
         Assert.assertEquals(artistTest.getName(), oraculo.get(0).getName());
@@ -245,19 +233,19 @@ public class ArtistTest {
      * @generated
      */
     @Test
-    public void listArtistTest() throws IOException, UnirestException, JSONException {
-        String token= login("alejand@alejando.com","Sunshine3");
+    public void listArtistTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
+        String token= login("sunshine3@ck.com","Sunshine3");
+
         Response response = target
             .request()
-                .cookie("username", "alejand@alejando.com")
+                .cookie("username", "sunshine3@ck.com")
                 .cookie("id_token",token)
-                .cookie("roles",roles)
                 .get();
 
         String listArtist = response.readEntity(String.class);
-        List<ArtistDetailDTO> listArtistTest = new ObjectMapper().readValue(listArtist, List.class);
-        Assert.assertEquals(Ok, response.getStatus());
-        Assert.assertEquals(oraculo.size(), listArtistTest.size());
+        List<ArtistDTO> listArtistTest = new ObjectMapper().readValue(listArtist, List.class);
+        Assert.assertEquals(OK, response.getStatus());
+        Assert.assertEquals(3, listArtistTest.size());
     }
 
     /**
@@ -266,25 +254,24 @@ public class ArtistTest {
      * @generated
      */
     @Test
-    public void updateArtistTest() throws IOException, UnirestException, JSONException {
-        String token= login("alejand@alejando.com","Sunshine3");
-        ArtistDetailDTO artist = new ArtistDetailDTO(oraculo.get(0));
+    public void updateArtistTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
+        String token= login("sunshine3@ck.com","Sunshine3");
+        ArtistDTO artist = new ArtistDTO(oraculo.get(0));
 
-        ArtistDetailDTO artistChanged = factory.manufacturePojo(ArtistDetailDTO.class);
+        ArtistDTO artistChanged = factory.manufacturePojo(ArtistDTO.class);
 
         artist.setName(artistChanged.getName());
 
         Response response = target
             .path(artist.getId().toString())
-            .request()
-                .cookie("username", "alejand@alejando.com")
-                .cookie("id_token",token)
-                .cookie("roles",roles)
+            .request()    
+            .cookie("username", "sunshine3@ck.com")
+             .cookie("id_token",token)
             .put(Entity.entity(artist, MediaType.APPLICATION_JSON));
 
-        ArtistDetailDTO artistTest = (ArtistDetailDTO) response.readEntity(ArtistDetailDTO.class);
+        ArtistDTO artistTest = (ArtistDTO) response.readEntity(ArtistDTO.class);
 
-        Assert.assertEquals(Ok, response.getStatus());
+        Assert.assertEquals(OK, response.getStatus());
         Assert.assertEquals(artist.getName(), artistTest.getName());
     }
 
@@ -294,17 +281,15 @@ public class ArtistTest {
      * @generated
      */
     @Test
-    public void deleteArtistTest() throws IOException, UnirestException, JSONException {
-        String token= login("alejand@alejando.com","Sunshine3");
-        ArtistDetailDTO artist = new ArtistDetailDTO(oraculo.get(0));
+    public void deleteArtistTest() throws IOException, UnirestException, JSONException, InterruptedException, ExecutionException {
+        String token= login("sunshine3@ck.com","Sunshine3");
+        ArtistDTO artist = new ArtistDTO(oraculo.get(0));
         Response response = target
             .path(artist.getId().toString())
             .request()
-                .cookie("username", "alejand@alejando.com")
-                .cookie("id_token",token)
-                .cookie("roles",roles)
-                .delete();
+             .cookie("username", "sunshine3@ck.com")
+             .cookie("id_token",token).delete();
 
-        Assert.assertEquals(OkWithoutContent, response.getStatus());
+        Assert.assertEquals(OK_WITHOUT_CONTENT, response.getStatus());
     }
 }
