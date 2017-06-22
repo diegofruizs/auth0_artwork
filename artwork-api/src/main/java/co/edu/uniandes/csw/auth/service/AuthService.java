@@ -138,9 +138,6 @@ public class AuthService {
     public UserDTO getCurrentUser() throws JSONException, UnirestException, IOException, InterruptedException, ExecutionException {
         Jws<Claims> claim = null;
         
-        System.out.println(auth.getManagementAccessToken());
-        System.out.println(auth.managementGetClientGrants("clientId").getBody());
-        System.out.println(authorization.authorizationAccessToken().getBody());
         if (logged) {
             claim = auth.decryptToken(req);
         }
